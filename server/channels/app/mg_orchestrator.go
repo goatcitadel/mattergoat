@@ -319,14 +319,15 @@ func (a *App) MGAdvanceTurn(rctx request.CTX, sessionID string) (bool, *model.Ap
 	a.Srv().Store().MatterGoat().UpdateSession(session)
 	a.mgPublishTurnChanged(session, turn)
 
-	// Build the scoped context bundle (the security boundary) and call the bridge.
+	// Build the scoped context bundle (the security boundary) and run the turn
+	// through the runtime adapter (bridge today, GoatCitadel later).
 	messages := a.mgBuildContextBundle(rctx, session, participant, profile)
-	completion, cErr := a.ch.agentsBridge.AgentCompletion(rctx.Session().UserId, profile.BridgeAgentId, BridgeCompletionRequest{
-		Operation:       BridgeOperationCollaborate,
-		ClientOperation: mgClientOperation,
-		Messages:        messages,
-		UserID:          rctx.Session().UserId,
-		ChannelID:       session.ChannelId,
+	completion, cErr := a.mgRuntime().Complete(rctx, MGRuntimeRequest{
+		SessionUserID: rctx.Session().UserId,
+		AgentRef:      profile.BridgeAgentId,
+		Messages:      messages,
+		UserID:        rctx.Session().UserId,
+		ChannelID:     session.ChannelId,
 	})
 	if cErr != nil {
 		turn.Status = model.MGTurnStatusViolation
@@ -414,12 +415,12 @@ func (a *App) MGSynthesize(rctx request.CTX, sessionID string) *model.AppError {
 	messages := a.mgBuildContextBundle(rctx, session, participant, profile)
 	messages = append(messages, BridgeMessage{Role: "user", Message: mgSynthesisInstruction()})
 
-	completion, cErr := a.ch.agentsBridge.AgentCompletion(rctx.Session().UserId, profile.BridgeAgentId, BridgeCompletionRequest{
-		Operation:       BridgeOperationCollaborate,
-		ClientOperation: mgClientOperation,
-		Messages:        messages,
-		UserID:          rctx.Session().UserId,
-		ChannelID:       session.ChannelId,
+	completion, cErr := a.mgRuntime().Complete(rctx, MGRuntimeRequest{
+		SessionUserID: rctx.Session().UserId,
+		AgentRef:      profile.BridgeAgentId,
+		Messages:      messages,
+		UserID:        rctx.Session().UserId,
+		ChannelID:     session.ChannelId,
 	})
 	if cErr != nil {
 		return mgErr("MGSynthesize", "app.mattergoat.completion.error", http.StatusBadGateway, cErr)

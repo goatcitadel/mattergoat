@@ -31,13 +31,19 @@ Markdown are **untrusted input**, never trusted commands.
    and all *new* tables/configs/permissions. Do **not** rename the Go module
    path (`github.com/mattermost/mattermost/server/v8`) or existing upstream
    identifiers — that preserves clean upstream merges.
-2. **Architecture = hybrid core + plugin.** Core owns the durable governed
-   substrate (sessions, participants, turns, approvals, memory proposals, audit,
-   provenance, permissions, Markdown export). The existing
-   **`mattermost-plugin-ai`** plugin — reached through the agents bridge already
-   in core (`server/channels/app/agents.go`, `agents_bridge.go`) — owns
-   model/provider routing and tool execution. The orchestrator never calls
-   providers directly.
+2. **Architecture = hybrid core + external runtime behind an adapter.** Core owns
+   the durable governed substrate (sessions, participants, turns, approvals,
+   memory proposals, audit, provenance, permissions, Markdown export). The
+   orchestrator runs each turn through the **`MGAgentRuntime` adapter**
+   (`server/channels/app/mg_runtime.go`) — never a provider directly. Today the
+   adapter is `bridgeAgentRuntime`, backed by the existing in-core agents bridge
+   to **`mattermost-plugin-ai`** (`server/channels/app/agents.go`,
+   `agents_bridge.go`). The adapter is the **GoatCitadel boundary**: GoatCitadel
+   (the external AI runtime brain — orchestration, models, tools, approvals,
+   durable runs, memory, policy, A2A) plugs in later as a `goatCitadelRuntime`
+   over HTTP/A2A/webhook, with GoatCitadel staying canonical for runtime state
+   and MatterGoat mirroring only read-only provenance. **Do not modify GoatCitadel
+   from this repo** — capture needed GoatCitadel APIs/contracts as follow-ups.
 3. **LLM runtime = `mattermost-plugin-ai`**, driven through the existing bridge
    (`a.ch.agentsBridge.ServiceCompletion`, `GetAgents`).
 4. **Scope = full brief MVP**, delivered in dependency-ordered build waves.
