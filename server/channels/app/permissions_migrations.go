@@ -986,6 +986,24 @@ func (a *App) getAddCustomUserGroupsPermissionRestore() (permissionsMap, error) 
 	}, nil
 }
 
+func (a *App) getAddMatterGoatPermissions() (permissionsMap, error) {
+	userPermissions := []string{
+		model.PermissionMGCreateSession.Id,
+		model.PermissionMGUseExternalAgent.Id,
+	}
+
+	return permissionsMap{
+		permissionTransformation{
+			On:  isExactRole(model.SystemUserRoleId),
+			Add: userPermissions,
+		},
+		permissionTransformation{
+			On:  isExactRole(model.SystemAdminRoleId),
+			Add: append([]string{model.PermissionMGManageAgentProfiles.Id}, userPermissions...),
+		},
+	}, nil
+}
+
 func (a *App) getAddPlaybooksPermissions() (permissionsMap, error) {
 	return permissionsMap{
 		permissionTransformation{
@@ -1408,6 +1426,7 @@ func (s *Server) doPermissionsMigrations() error {
 		{Key: model.MigrationKeyAddManageAgentPermissions, Migration: a.getAddManageAgentPermissionsMigration},
 		{Key: model.MigrationKeyAddEditFileAttachmentPermission, Migration: a.getAddEditFileAttachmentPermissionMigration},
 		{Key: model.MigrationKeyAddDiscoverableChannelPermissions, Migration: a.getAddDiscoverableChannelPermissionsMigration},
+		{Key: model.MigrationKeyAddMatterGoatPermissions, Migration: a.getAddMatterGoatPermissions},
 	}
 
 	roles, err := s.Store().Role().GetAll()

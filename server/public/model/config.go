@@ -4215,6 +4215,7 @@ type Config struct {
 	AccessControlSettings       AccessControlSettings
 	ContentFlaggingSettings     ContentFlaggingSettings
 	AutoTranslationSettings     AutoTranslationSettings
+	MatterGoatSettings          MatterGoatSettings
 }
 
 func (o *Config) Auditable() map[string]any {
@@ -4335,6 +4336,7 @@ func (o *Config) SetDefaults() {
 	o.ConnectedWorkspacesSettings.SetDefaults(isUpdate, o.ExperimentalSettings)
 	o.AccessControlSettings.SetDefaults()
 	o.ContentFlaggingSettings.SetDefaults()
+	o.MatterGoatSettings.SetDefaults()
 }
 
 func (o *Config) IsValid() *AppError {
@@ -4492,6 +4494,10 @@ func (o *Config) IsValid() *AppError {
 	}
 
 	if appErr := o.ContentFlaggingSettings.IsValid(); appErr != nil {
+		return appErr
+	}
+
+	if appErr := o.MatterGoatSettings.isValid(); appErr != nil {
 		return appErr
 	}
 
@@ -5201,6 +5207,106 @@ func (s *LocalizationSettings) isValid() *AppError {
 		if !strings.Contains(*s.AvailableLocales, *s.DefaultClientLocale) {
 			return NewAppError("Config.IsValid", "model.config.is_valid.localization.available_locales.app_error", nil, "", http.StatusBadRequest)
 		}
+	}
+
+	return nil
+}
+
+// MatterGoat collaboration profiles and memory behavior defaults.
+const (
+	MatterGoatProfileConservative = "conservative"
+	MatterGoatProfileResearch     = "research_debate"
+	MatterGoatProfileCodeReview   = "code_review"
+	MatterGoatProfileIncident     = "incident_response"
+	MatterGoatProfileHandoff      = "implementation_handoff"
+	MatterGoatProfileCritique     = "multi_model_critique"
+	MatterGoatProfileBrainstorm   = "brainstorm"
+	MatterGoatProfileExternal     = "external_agent"
+
+	MatterGoatMemoryProposeOnly = "propose_only"
+	MatterGoatMemoryDisabled    = "disabled"
+
+	MatterGoatDefaultMaxAgentsPerSession  = 6
+	MatterGoatDefaultMaxRounds            = 8
+	MatterGoatDefaultStaleTurnTimeoutSecs = 120
+)
+
+// MatterGoatSettings configures the MatterGoat multi-agent AI collaboration
+// feature. The whole feature is gated on EnableAICollaboration (default off);
+// model/provider calls are delegated to the mattermost-plugin-ai bridge.
+type MatterGoatSettings struct {
+	EnableAICollaboration   *bool   `access:"experimental_features,cloud_restrictable"`
+	AllowExternalProviders  *bool   `access:"experimental_features,cloud_restrictable"`
+	DefaultProfile          *string `access:"experimental_features,cloud_restrictable"`
+	DefaultMemoryBehavior   *string `access:"experimental_features,cloud_restrictable"`
+	MaxAgentsPerSession     *int    `access:"experimental_features,cloud_restrictable"`
+	MaxRounds               *int    `access:"experimental_features,cloud_restrictable"`
+	StaleTurnTimeoutSeconds *int    `access:"experimental_features,cloud_restrictable"`
+	RequireApprovalForTools *bool   `access:"experimental_features,cloud_restrictable"`
+	AllowMarkdownExport     *bool   `access:"experimental_features,cloud_restrictable"`
+}
+
+func (s *MatterGoatSettings) SetDefaults() {
+	if s.EnableAICollaboration == nil {
+		s.EnableAICollaboration = NewPointer(false)
+	}
+
+	if s.AllowExternalProviders == nil {
+		s.AllowExternalProviders = NewPointer(true)
+	}
+
+	if s.DefaultProfile == nil {
+		s.DefaultProfile = NewPointer(MatterGoatProfileConservative)
+	}
+
+	if s.DefaultMemoryBehavior == nil {
+		s.DefaultMemoryBehavior = NewPointer(MatterGoatMemoryProposeOnly)
+	}
+
+	if s.MaxAgentsPerSession == nil {
+		s.MaxAgentsPerSession = NewPointer(MatterGoatDefaultMaxAgentsPerSession)
+	}
+
+	if s.MaxRounds == nil {
+		s.MaxRounds = NewPointer(MatterGoatDefaultMaxRounds)
+	}
+
+	if s.StaleTurnTimeoutSeconds == nil {
+		s.StaleTurnTimeoutSeconds = NewPointer(MatterGoatDefaultStaleTurnTimeoutSecs)
+	}
+
+	if s.RequireApprovalForTools == nil {
+		s.RequireApprovalForTools = NewPointer(true)
+	}
+
+	if s.AllowMarkdownExport == nil {
+		s.AllowMarkdownExport = NewPointer(true)
+	}
+}
+
+func (s *MatterGoatSettings) isValid() *AppError {
+	if s.EnableAICollaboration == nil || !*s.EnableAICollaboration {
+		return nil
+	}
+
+	if s.DefaultMemoryBehavior != nil {
+		switch *s.DefaultMemoryBehavior {
+		case MatterGoatMemoryProposeOnly, MatterGoatMemoryDisabled:
+		default:
+			return NewAppError("Config.IsValid", "model.config.is_valid.mattergoat.memory_behavior.app_error", nil, "", http.StatusBadRequest)
+		}
+	}
+
+	if s.MaxAgentsPerSession != nil && (*s.MaxAgentsPerSession < 1 || *s.MaxAgentsPerSession > 64) {
+		return NewAppError("Config.IsValid", "model.config.is_valid.mattergoat.max_agents.app_error", nil, "", http.StatusBadRequest)
+	}
+
+	if s.MaxRounds != nil && (*s.MaxRounds < 1 || *s.MaxRounds > 100) {
+		return NewAppError("Config.IsValid", "model.config.is_valid.mattergoat.max_rounds.app_error", nil, "", http.StatusBadRequest)
+	}
+
+	if s.StaleTurnTimeoutSeconds != nil && *s.StaleTurnTimeoutSeconds <= 0 {
+		return NewAppError("Config.IsValid", "model.config.is_valid.mattergoat.stale_timeout.app_error", nil, "", http.StatusBadRequest)
 	}
 
 	return nil

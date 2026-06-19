@@ -103,6 +103,7 @@ type Store interface {
 	GetSchemaDefinition() (*model.SupportPacketDatabaseSchema, error)
 	ContentFlagging() ContentFlaggingStore
 	Recap() RecapStore
+	MatterGoat() MatterGoatStore
 	ReadReceipt() ReadReceiptStore
 	TemporaryPost() TemporaryPostStore
 	ChannelJoinRequest() ChannelJoinRequestStore
@@ -1409,4 +1410,48 @@ type RecapStore interface {
 	DeleteRecapChannels(recapId string) error
 	SaveRecapChannel(recapChannel *model.RecapChannel) error
 	GetRecapChannelsByRecapId(recapId string) ([]*model.RecapChannel, error)
+}
+
+// MatterGoatStore is the consolidated store for the MatterGoat multi-agent AI
+// collaboration feature (agent profiles, sessions, participants, turns,
+// approvals, memory proposals, markdown exports).
+type MatterGoatStore interface {
+	// Agent profiles
+	SaveAgentProfile(profile *model.MGAgentProfile) (*model.MGAgentProfile, error)
+	UpdateAgentProfile(profile *model.MGAgentProfile) (*model.MGAgentProfile, error)
+	GetAgentProfile(id string) (*model.MGAgentProfile, error)
+	GetAgentProfilesByOwner(ownerType, ownerId string) ([]*model.MGAgentProfile, error)
+	DeleteAgentProfile(id string) error
+
+	// Sessions
+	SaveSession(session *model.MGSession) (*model.MGSession, error)
+	UpdateSession(session *model.MGSession) (*model.MGSession, error)
+	GetSession(id string) (*model.MGSession, error)
+	GetSessionsForChannel(channelId string) ([]*model.MGSession, error)
+	DeleteSession(id string) error
+
+	// Participants
+	SaveParticipant(participant *model.MGSessionParticipant) (*model.MGSessionParticipant, error)
+	GetParticipantsForSession(sessionId string) ([]*model.MGSessionParticipant, error)
+	DeleteParticipant(sessionId, agentProfileId string) error
+
+	// Turns
+	SaveTurn(turn *model.MGTurn) (*model.MGTurn, error)
+	UpdateTurn(turn *model.MGTurn) (*model.MGTurn, error)
+	GetTurnsForSession(sessionId string) ([]*model.MGTurn, error)
+
+	// Approvals
+	SaveApproval(approval *model.MGApproval) (*model.MGApproval, error)
+	UpdateApproval(approval *model.MGApproval) (*model.MGApproval, error)
+	GetApproval(id string) (*model.MGApproval, error)
+	GetApprovalsForSession(sessionId string) ([]*model.MGApproval, error)
+
+	// Memory proposals
+	SaveMemoryProposal(proposal *model.MGMemoryProposal) (*model.MGMemoryProposal, error)
+	UpdateMemoryProposal(proposal *model.MGMemoryProposal) (*model.MGMemoryProposal, error)
+	GetMemoryProposalsForSession(sessionId string) ([]*model.MGMemoryProposal, error)
+
+	// Markdown exports
+	SaveMarkdownExport(export *model.MGMarkdownExport) (*model.MGMarkdownExport, error)
+	GetMarkdownExportsForSession(sessionId string) ([]*model.MGMarkdownExport, error)
 }

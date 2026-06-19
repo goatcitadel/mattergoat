@@ -3,6 +3,20 @@
 Explicitly import subdirectory instruction files that must always be in context:
 @server/AGENTS.md
 
+## MatterGoat
+
+This repository is **MatterGoat**, a fork of Mattermost that adds first-class,
+governed, multi-agent AI collaboration. Before working on AI-agent / collaboration
+features, read the project charter: `docs/mattergoat-ai-collaboration.md`.
+
+Key rule: chat messages are the human-visible transcript and audit trail, **not**
+the canonical runtime state — canonical state lives in the MatterGoat (`MG*`) store
+tables and the orchestrator (`server/channels/app/mg_orchestrator.go`). The feature
+is gated by `FeatureFlags.MatterGoatAgents` + `MatterGoatSettings.EnableAICollaboration`
+(both default off); gate every entry point on `App.MatterGoatEnabled()`. Keep
+branding changes to the product surface — do not rename the Go module path or
+existing upstream identifiers, so upstream merges stay clean.
+
 ## Pull Requests
 
 When creating a pull request, follow `.github/PULL_REQUEST_TEMPLATE.md` exactly:

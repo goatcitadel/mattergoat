@@ -159,6 +159,12 @@ type FeatureFlags struct {
 
 	// Requires AttributeBasedAccessControl to also be enabled.
 	TeamMembershipAccessControl bool
+
+	// FEATURE_FLAG_REMOVAL: MatterGoatAgents - Remove this when the feature is GA.
+	// Gates the MatterGoat multi-agent AI collaboration feature. When off, the
+	// MatterGoat session/orchestration APIs and UI are unavailable regardless of
+	// MatterGoatSettings.EnableAICollaboration.
+	MatterGoatAgents bool
 }
 
 func (f *FeatureFlags) SetDefaults() {
@@ -225,6 +231,9 @@ func (f *FeatureFlags) SetDefaults() {
 	f.MobileEphemeralMode = false
 
 	f.PropertyFieldRank = false
+
+	// FEATURE_FLAG_REMOVAL: MatterGoatAgents - Remove this default when the feature is GA.
+	f.MatterGoatAgents = false
 }
 
 // IsChannelPermissionPoliciesEnabled reports whether channel-scope

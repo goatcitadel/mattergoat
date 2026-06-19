@@ -1172,6 +1172,18 @@
     "translation": "Unable to generate presign url."
   },
   {
+    "id": "api.command_goat.desc",
+    "translation": "Start and control MatterGoat multi-agent AI collaboration"
+  },
+  {
+    "id": "api.command_goat.hint",
+    "translation": "[ask|debate|synthesize|export|approvals|status] ..."
+  },
+  {
+    "id": "api.command_goat.name",
+    "translation": "goat"
+  },
+  {
     "id": "api.command_groupmsg.desc",
     "translation": "Sends a Group Message to the specified users"
   },
@@ -2735,6 +2747,22 @@
   {
     "id": "api.marshal_error",
     "translation": "Failed to marshal."
+  },
+  {
+    "id": "api.mattergoat.disabled.app_error",
+    "translation": "MatterGoat AI collaboration is not enabled."
+  },
+  {
+    "id": "api.mattergoat.get_approval.app_error",
+    "translation": "Could not load the approval."
+  },
+  {
+    "id": "api.mattergoat.get_turns.app_error",
+    "translation": "Could not load session turns."
+  },
+  {
+    "id": "api.mattergoat.permission_denied",
+    "translation": "You do not have permission to perform this MatterGoat action."
   },
   {
     "id": "api.migrate_to_saml.error",
@@ -7493,6 +7521,18 @@
     "translation": "Failed to set managed category on channel."
   },
   {
+    "id": "app.mattergoat.disabled",
+    "translation": "MatterGoat AI collaboration is not enabled."
+  },
+  {
+    "id": "app.mattergoat.not_implemented",
+    "translation": "This MatterGoat capability is not implemented yet."
+  },
+  {
+    "id": "app.mattergoat.permission_denied",
+    "translation": "You do not have permission to perform this MatterGoat action."
+  },
+  {
     "id": "app.member_count",
     "translation": "error retrieving member count"
   },
@@ -11871,6 +11911,22 @@
     "translation": "Invalid maximum login attempts for service settings. Must be a positive number."
   },
   {
+    "id": "model.config.is_valid.mattergoat.max_agents.app_error",
+    "translation": "Invalid MatterGoat maximum agents per session. Must be between 1 and 64."
+  },
+  {
+    "id": "model.config.is_valid.mattergoat.max_rounds.app_error",
+    "translation": "Invalid MatterGoat maximum rounds. Must be between 1 and 100."
+  },
+  {
+    "id": "model.config.is_valid.mattergoat.memory_behavior.app_error",
+    "translation": "Invalid MatterGoat default memory behavior. Must be \"propose_only\" or \"disabled\"."
+  },
+  {
+    "id": "model.config.is_valid.mattergoat.stale_timeout.app_error",
+    "translation": "Invalid MatterGoat stale turn timeout. Must be a positive number of seconds."
+  },
+  {
     "id": "model.config.is_valid.max_burst.app_error",
     "translation": "Maximum burst size must be greater than zero."
   },
@@ -12465,6 +12521,10 @@
   {
     "id": "model.link_metadata.is_valid.url_length.app_error",
     "translation": "Length of link metadata URL is {{ .Length }} characters long, which exceeds the maximum limit of {{ .MaxLength }} characters."
+  },
+  {
+    "id": "model.mattergoat.is_valid.error",
+    "translation": "Invalid MatterGoat {{.Field}} for record {{.Id}}."
   },
   {
     "id": "model.member.is_valid.channel.app_error",

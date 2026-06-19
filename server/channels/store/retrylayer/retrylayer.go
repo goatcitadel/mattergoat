@@ -59,6 +59,7 @@ type RetryLayer struct {
 	ReactionStore                   store.ReactionStore
 	ReadReceiptStore                store.ReadReceiptStore
 	RecapStore                      store.RecapStore
+	MatterGoatStore                 store.MatterGoatStore
 	RemoteClusterStore              store.RemoteClusterStore
 	RetentionPolicyStore            store.RetentionPolicyStore
 	RoleStore                       store.RoleStore
@@ -19075,6 +19076,7 @@ func New(childStore store.Store) *RetryLayer {
 	newStore.ReactionStore = &RetryLayerReactionStore{ReactionStore: childStore.Reaction(), Root: &newStore}
 	newStore.ReadReceiptStore = &RetryLayerReadReceiptStore{ReadReceiptStore: childStore.ReadReceipt(), Root: &newStore}
 	newStore.RecapStore = &RetryLayerRecapStore{RecapStore: childStore.Recap(), Root: &newStore}
+	newStore.MatterGoatStore = &RetryLayerMatterGoatStore{MatterGoatStore: childStore.MatterGoat(), Root: &newStore}
 	newStore.RemoteClusterStore = &RetryLayerRemoteClusterStore{RemoteClusterStore: childStore.RemoteCluster(), Root: &newStore}
 	newStore.RetentionPolicyStore = &RetryLayerRetentionPolicyStore{RetentionPolicyStore: childStore.RetentionPolicy(), Root: &newStore}
 	newStore.RoleStore = &RetryLayerRoleStore{RoleStore: childStore.Role(), Root: &newStore}

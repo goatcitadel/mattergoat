@@ -23,6 +23,10 @@ const (
 	BridgeOperationAutoTranslate BridgeOperation = "auto_translate"
 	BridgeOperationRecapSummary  BridgeOperation = "recap_summary"
 	BridgeOperationRewrite       BridgeOperation = "rewrite"
+	// BridgeOperationCollaborate drives a MatterGoat multi-agent turn through a
+	// specific bridge agent. Only ClientOperation is forwarded to the plugin
+	// (see toClientCompletionRequest); Operation is server-side metadata.
+	BridgeOperationCollaborate BridgeOperation = "collaborate"
 )
 
 type BridgeMessage struct {

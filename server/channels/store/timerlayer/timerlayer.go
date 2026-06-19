@@ -58,6 +58,7 @@ type TimerLayer struct {
 	ReactionStore                   store.ReactionStore
 	ReadReceiptStore                store.ReadReceiptStore
 	RecapStore                      store.RecapStore
+	MatterGoatStore                 store.MatterGoatStore
 	RemoteClusterStore              store.RemoteClusterStore
 	RetentionPolicyStore            store.RetentionPolicyStore
 	RoleStore                       store.RoleStore
@@ -15084,6 +15085,7 @@ func New(childStore store.Store, metrics einterfaces.MetricsInterface) *TimerLay
 	newStore.ReactionStore = &TimerLayerReactionStore{ReactionStore: childStore.Reaction(), Root: &newStore}
 	newStore.ReadReceiptStore = &TimerLayerReadReceiptStore{ReadReceiptStore: childStore.ReadReceipt(), Root: &newStore}
 	newStore.RecapStore = &TimerLayerRecapStore{RecapStore: childStore.Recap(), Root: &newStore}
+	newStore.MatterGoatStore = &TimerLayerMatterGoatStore{MatterGoatStore: childStore.MatterGoat(), Root: &newStore}
 	newStore.RemoteClusterStore = &TimerLayerRemoteClusterStore{RemoteClusterStore: childStore.RemoteCluster(), Root: &newStore}
 	newStore.RetentionPolicyStore = &TimerLayerRetentionPolicyStore{RetentionPolicyStore: childStore.RetentionPolicy(), Root: &newStore}
 	newStore.RoleStore = &TimerLayerRoleStore{RoleStore: childStore.Role(), Root: &newStore}

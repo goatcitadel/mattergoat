@@ -117,6 +117,7 @@ type SqlStoreStores struct {
 	autotranslation            store.AutoTranslationStore
 	ContentFlagging            store.ContentFlaggingStore
 	recap                      store.RecapStore
+	matterGoat                 store.MatterGoatStore
 	readReceipt                store.ReadReceiptStore
 	temporaryPost              store.TemporaryPostStore
 	channelJoinRequest         store.ChannelJoinRequestStore
@@ -311,6 +312,7 @@ func New(settings model.SqlSettings, logger mlog.LoggerIFace, metrics einterface
 	store.stores.autotranslation = newSqlAutoTranslationStore(store)
 	store.stores.ContentFlagging = newContentFlaggingStore(store)
 	store.stores.recap = newSqlRecapStore(store)
+	store.stores.matterGoat = newSqlMatterGoatStore(store)
 	store.stores.readReceipt = newSqlReadReceiptStore(store, metrics)
 	store.stores.temporaryPost = newSqlTemporaryPostStore(store, metrics)
 	store.stores.channelJoinRequest = newSqlChannelJoinRequestStore(store)
@@ -960,6 +962,10 @@ func (ss *SqlStore) AutoTranslation() store.AutoTranslationStore {
 
 func (ss *SqlStore) Recap() store.RecapStore {
 	return ss.stores.recap
+}
+
+func (ss *SqlStore) MatterGoat() store.MatterGoatStore {
+	return ss.stores.matterGoat
 }
 
 func (ss *SqlStore) ReadReceipt() store.ReadReceiptStore {

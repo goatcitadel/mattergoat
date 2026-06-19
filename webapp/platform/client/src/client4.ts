@@ -121,6 +121,7 @@ import type {
 } from '@mattermost/types/properties';
 import type {Reaction} from '@mattermost/types/reactions';
 import type {Recap, CreateRecapRequest} from '@mattermost/types/recaps';
+import type {MGAgentProfile, MGSession, MGTurn, MGApproval, MGMemoryProposal, MGStartSessionRequest, MGResolveRequest} from '@mattermost/types/mattergoat';
 import type {RemoteCluster, RemoteClusterAcceptInvite, RemoteClusterPatch, RemoteClusterWithPassword} from '@mattermost/types/remote_clusters';
 import type {UserReport, UserReportFilter, UserReportOptions} from '@mattermost/types/reports';
 import type {Role} from '@mattermost/types/roles';
@@ -472,6 +473,10 @@ export default class Client4 {
 
     getAgentsRoute() {
         return `${this.getBaseRoute()}/agents`;
+    }
+
+    getMatterGoatRoute() {
+        return `${this.getBaseRoute()}/mattergoat`;
     }
 
     getLLMServicesRoute() {
@@ -3510,6 +3515,134 @@ export default class Client4 {
     markRecapsAsViewed = () => {
         return this.doFetch<{recap_ids: string[]}>(
             `${this.getRecapsRoute()}/mark_viewed`,
+            {method: 'post'},
+        );
+    };
+
+    // MatterGoat multi-agent AI collaboration
+
+    getMatterGoatAgentProfiles = (ownerType = '', ownerId = '') => {
+        return this.doFetch<MGAgentProfile[]>(
+            `${this.getMatterGoatRoute()}/agent_profiles${buildQueryString({owner_type: ownerType, owner_id: ownerId})}`,
+            {method: 'get'},
+        );
+    };
+
+    createMatterGoatAgentProfile = (profile: Partial<MGAgentProfile>) => {
+        return this.doFetch<MGAgentProfile>(
+            `${this.getMatterGoatRoute()}/agent_profiles`,
+            {method: 'post', body: JSON.stringify(profile)},
+        );
+    };
+
+    updateMatterGoatAgentProfile = (profileId: string, profile: Partial<MGAgentProfile>) => {
+        return this.doFetch<MGAgentProfile>(
+            `${this.getMatterGoatRoute()}/agent_profiles/${profileId}`,
+            {method: 'put', body: JSON.stringify(profile)},
+        );
+    };
+
+    deleteMatterGoatAgentProfile = (profileId: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getMatterGoatRoute()}/agent_profiles/${profileId}`,
+            {method: 'delete'},
+        );
+    };
+
+    startMatterGoatSession = (request: MGStartSessionRequest) => {
+        return this.doFetch<MGSession>(
+            `${this.getMatterGoatRoute()}/sessions`,
+            {method: 'post', body: JSON.stringify(request)},
+        );
+    };
+
+    getMatterGoatSession = (sessionId: string) => {
+        return this.doFetch<MGSession>(
+            `${this.getMatterGoatRoute()}/sessions/${sessionId}`,
+            {method: 'get'},
+        );
+    };
+
+    getMatterGoatChannelSessions = (channelId: string) => {
+        return this.doFetch<MGSession[]>(
+            `${this.getMatterGoatRoute()}/channels/${channelId}/sessions`,
+            {method: 'get'},
+        );
+    };
+
+    abortMatterGoatSession = (sessionId: string) => {
+        return this.doFetch<StatusOK>(
+            `${this.getMatterGoatRoute()}/sessions/${sessionId}/abort`,
+            {method: 'post'},
+        );
+    };
+
+    advanceMatterGoatSession = (sessionId: string) => {
+        return this.doFetch<MGSession>(
+            `${this.getMatterGoatRoute()}/sessions/${sessionId}/advance`,
+            {method: 'post'},
+        );
+    };
+
+    runMatterGoatSession = (sessionId: string) => {
+        return this.doFetch<MGSession>(
+            `${this.getMatterGoatRoute()}/sessions/${sessionId}/run`,
+            {method: 'post'},
+        );
+    };
+
+    synthesizeMatterGoatSession = (sessionId: string) => {
+        return this.doFetch<MGSession>(
+            `${this.getMatterGoatRoute()}/sessions/${sessionId}/synthesize`,
+            {method: 'post'},
+        );
+    };
+
+    addMatterGoatParticipant = (sessionId: string, agentProfileId: string, contextGrant = '') => {
+        return this.doFetch<MGSession>(
+            `${this.getMatterGoatRoute()}/sessions/${sessionId}/participants`,
+            {method: 'post', body: JSON.stringify({agent_profile_id: agentProfileId, context_grant: contextGrant})},
+        );
+    };
+
+    getMatterGoatTurns = (sessionId: string) => {
+        return this.doFetch<MGTurn[]>(
+            `${this.getMatterGoatRoute()}/sessions/${sessionId}/turns`,
+            {method: 'get'},
+        );
+    };
+
+    getMatterGoatApprovals = (sessionId: string) => {
+        return this.doFetch<MGApproval[]>(
+            `${this.getMatterGoatRoute()}/sessions/${sessionId}/approvals`,
+            {method: 'get'},
+        );
+    };
+
+    resolveMatterGoatApproval = (approvalId: string, request: MGResolveRequest) => {
+        return this.doFetch<MGApproval>(
+            `${this.getMatterGoatRoute()}/approvals/${approvalId}/resolve`,
+            {method: 'post', body: JSON.stringify(request)},
+        );
+    };
+
+    getMatterGoatMemoryProposals = (sessionId: string) => {
+        return this.doFetch<MGMemoryProposal[]>(
+            `${this.getMatterGoatRoute()}/sessions/${sessionId}/memory_proposals`,
+            {method: 'get'},
+        );
+    };
+
+    resolveMatterGoatMemoryProposal = (sessionId: string, proposalId: string, request: MGResolveRequest) => {
+        return this.doFetch<StatusOK>(
+            `${this.getMatterGoatRoute()}/sessions/${sessionId}/memory_proposals/${proposalId}/resolve`,
+            {method: 'post', body: JSON.stringify(request)},
+        );
+    };
+
+    exportMatterGoatSession = (sessionId: string) => {
+        return this.doFetch<{markdown: string}>(
+            `${this.getMatterGoatRoute()}/sessions/${sessionId}/export`,
             {method: 'post'},
         );
     };

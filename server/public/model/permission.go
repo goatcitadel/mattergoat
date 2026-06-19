@@ -422,6 +422,9 @@ var SysconsoleWritePermissions []*Permission
 var PermissionManageOutgoingOAuthConnections *Permission
 var PermissionManageOwnAgent *Permission
 var PermissionManageOthersAgent *Permission
+var PermissionMGCreateSession *Permission
+var PermissionMGManageAgentProfiles *Permission
+var PermissionMGUseExternalAgent *Permission
 var ModeratedBookmarkPermissions []*Permission
 
 func initializePermissions() {
@@ -2371,6 +2374,24 @@ func initializePermissions() {
 		"authentication.permissions.manage_others_agent.description",
 		PermissionScopeSystem,
 	}
+	PermissionMGCreateSession = &Permission{
+		"mg_create_session",
+		"authentication.permissions.mg_create_session.name",
+		"authentication.permissions.mg_create_session.description",
+		PermissionScopeSystem,
+	}
+	PermissionMGManageAgentProfiles = &Permission{
+		"mg_manage_agent_profiles",
+		"authentication.permissions.mg_manage_agent_profiles.name",
+		"authentication.permissions.mg_manage_agent_profiles.description",
+		PermissionScopeSystem,
+	}
+	PermissionMGUseExternalAgent = &Permission{
+		"mg_use_external_agent",
+		"authentication.permissions.mg_use_external_agent.name",
+		"authentication.permissions.mg_use_external_agent.description",
+		PermissionScopeSystem,
+	}
 
 	SysconsoleReadPermissions = []*Permission{
 		PermissionSysconsoleReadAboutEditionAndLicense,
@@ -2570,6 +2591,9 @@ func initializePermissions() {
 		PermissionManageOutgoingOAuthConnections,
 		PermissionManageOwnAgent,
 		PermissionManageOthersAgent,
+		PermissionMGCreateSession,
+		PermissionMGManageAgentProfiles,
+		PermissionMGUseExternalAgent,
 	}
 
 	TeamScopedPermissions := []*Permission{
