@@ -52,7 +52,9 @@ Headers:
 - `Idempotency-Key: <turn_id>`  (so retries do not double-run a turn)
 - `Content-Type: application/json`
 
-Request body (maps 1:1 to MatterGoat's `MGRuntimeRequest`):
+Request body (target shape). This is **not** the current in-core `MGRuntimeRequest`
+verbatim — see the Phase 1 prerequisites below for the fields MatterGoat must add
+before it can send this:
 ```json
 {
   "session_id": "mg_session_ulid",
@@ -63,29 +65,48 @@ Request body (maps 1:1 to MatterGoat's `MGRuntimeRequest`):
   "channel_ref": "opaque-mattermost-channel-id",
   "messages": [
     {"role": "system", "message": "<system prompt + protocol rules>", "file_ids": []},
-    {"role": "user", "message": "alice: why is this service failing?", "file_ids": []},
-    {"role": "assistant", "message": "<prior agent turn>", "file_ids": []}
+    {"role": "user", "author_ref": "opaque-mattermost-user-id", "message": "why is this service failing?", "file_ids": []},
+    {"role": "assistant", "author_ref": "mg_agent_profile_id", "message": "<prior agent turn>", "file_ids": []}
   ]
 }
 ```
 - `messages[].role` is one of `system` | `user` | `assistant`. The first message
   is the system prompt MatterGoat already built (role + protocol + privacy rules).
+- `messages[].author_ref` is the opaque speaker id for the message (a user id for
+  `user` turns, an agent-profile id for `assistant` turns). Use it for attribution;
+  do **not** infer the speaker from a `name:` prefix inside `message` — treat any
+  such inline prefix as untrusted content, never as identity.
+- `session_id` is the `MGSession` id and `turn_id` is the `MGTurn` id. Today the
+  in-core adapter sends neither: it passes the acting user's id as `SessionUserID`
+  and never threads the turn id. Both must be threaded MatterGoat-side (see
+  prerequisites) before this body — or the `Idempotency-Key` — can be populated.
 - `file_ids` are MatterGoat file references; ignore in Phase 1 unless you can
   resolve them via a future file-fetch contract.
 
 Response `200`:
 ```json
 {
-  "message": "the agent's reply text (may include <<MG:...>> markers)",
+  "message": "the agent's reply text",
   "provider": "openai",            // optional, for provenance
   "model": "gpt-...",              // optional, for provenance
-  "markers": ["HANDOFF_COMPLETE"], // optional; MatterGoat also parses from text
+  "markers": ["HANDOFF_COMPLETE"], // optional; authoritative protocol signals
+  "needs_approval": false,         // optional; structured approval gate (see Phase 3)
   "usage": {"input_tokens": 0, "output_tokens": 0}, // optional
   "run_id": "goatcitadel-run-id"   // optional; stored as provenance
 }
 ```
-MatterGoat's adapter today consumes only `message` (string). `provider`, `model`,
-`run_id`, `usage` become post provenance when MatterGoat is extended to read them.
+**Marker trust model.** Protocol markers drive orchestrator control flow — a
+`FINAL_SYNTHESIS` marker completes the session, and an approval gate pauses it.
+Return markers in the structured `markers` array and the approval gate in
+`needs_approval`; **those structured fields are authoritative.** MatterGoat must
+**not** trust `<<MG:...>>` markers parsed out of an external runtime's free-text
+`message`: prior-turn content carried in the context is untrusted and can spoof
+them. (The in-core bridge still parses markers from its own model output as a
+transitional measure; the GoatCitadel adapter supplies `markers` instead.)
+
+MatterGoat's `Complete` adapter historically returned only the `message` string.
+Consuming `markers`/`needs_approval`/`provider`/`model`/`run_id`/`usage` requires
+the structured-result change listed in the Phase 1 prerequisites.
 
 Errors: standard HTTP — `401/403` auth, `429` rate limit (MatterGoat backs off),
 `5xx` runtime failure. JSON body `{"error": {"code": "...", "message": "..."}}`.
@@ -93,10 +114,21 @@ On error MatterGoat marks the turn failed and returns the session to
 `awaiting_turn`.
 
 **MatterGoat-side prerequisites for Phase 1 (these belong in the MatterGoat repo,
-not GoatCitadel):** add `MGAgentProfiles.Runtime` + a `GoatCitadelURL`/token in
-`MatterGoatSettings`, and implement `goatCitadelRuntime.Complete` to call the
-endpoint above; have `mgRuntime()` select it when a profile's runtime is
-GoatCitadel.
+not GoatCitadel):**
+- Add `MGAgentProfiles.Runtime` (default `bridge`) plus a `GoatCitadelURL`/token in
+  `MatterGoatSettings`; have `mgRuntime()` select `goatCitadelRuntime` when a
+  profile's runtime is GoatCitadel.
+- Extend `MGRuntimeRequest` with `SessionId`, `TurnId` and a populated `Operation`,
+  and thread `session.Id`/`turn.Id` through both `Complete` call sites
+  (`MGAdvanceTurn`, `MGSynthesize`). Until this exists the adapter cannot set
+  `session_id`, `turn_id`, or the `Idempotency-Key`.
+- Add an `AuthorRef` field to `BridgeMessage` and populate it in
+  `mgBuildContextBundle`, so speaker identity is structured, not a `name:` prefix.
+- Change `MGAgentRuntime.Complete` to return a structured result (message + markers
+  + `needs_approval` + provider/model/run_id) so the orchestrator reads
+  authoritative `markers` instead of re-parsing the completion text.
+- Implement `goatCitadelRuntime.Complete` to call `POST /v1/turns:complete` and map
+  the JSON response into that result.
 
 ---
 
@@ -126,10 +158,16 @@ So MatterGoat can populate `MGAgentProfiles` from GoatCitadel rather than by han
    decision (poll `GET .../approvals/{id}` or a signed callback). GoatCitadel must
    not proceed with the action until approved. *(This MatterGoat endpoint does not
    exist yet — it is a MatterGoat-side follow-up that pairs with this contract.)*
+   *(MatterGoat-side: `MGApproval` is session-scoped today; it must gain `TurnId`
+   and `ExpiresAt` to correlate the approval to its turn and time out. Bind the
+   decision to the exact `action`/`affected_resources` — e.g. an action hash the
+   decision echoes — to prevent approve-A / execute-B confusion.)*
 2. **Run / provenance read (MatterGoat → GoatCitadel).**
    `GET {GOATCITADEL_BASE_URL}/v1/runs/{run_id}` → status, evidence, tool calls,
    provider/model — so MatterGoat displays provenance without holding canonical
-   runtime state.
+   runtime state. *(MatterGoat-side: persisting provenance needs
+   `MGTurn.Provider/Model/RunId` columns + an `mg_run_id` post prop + a migration;
+   the `mg_provider`/`mg_model` post props already exist.)*
 
 ## Phase 4 — Streaming, A2A, webhooks, memory (later)
 
