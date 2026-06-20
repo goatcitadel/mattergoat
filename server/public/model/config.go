@@ -5249,6 +5249,10 @@ type MatterGoatSettings struct {
 	// is the per-instance bearer token (a secret — redacted by Sanitize).
 	GoatCitadelURL   *string `access:"experimental_features,cloud_restrictable"`
 	GoatCitadelToken *string `access:"experimental_features,cloud_restrictable"`
+	// GoatCitadelCallbackToken is the shared secret GoatCitadel presents when it
+	// calls MatterGoat back (e.g. runtime approval requests). A secret — redacted
+	// by Sanitize. Empty disables inbound runtime callbacks.
+	GoatCitadelCallbackToken *string `access:"experimental_features,cloud_restrictable"`
 }
 
 func (s *MatterGoatSettings) SetDefaults() {
@@ -5294,6 +5298,10 @@ func (s *MatterGoatSettings) SetDefaults() {
 
 	if s.GoatCitadelToken == nil {
 		s.GoatCitadelToken = NewPointer("")
+	}
+
+	if s.GoatCitadelCallbackToken == nil {
+		s.GoatCitadelCallbackToken = NewPointer("")
 	}
 }
 
@@ -5462,6 +5470,10 @@ func (o *Config) Sanitize(pluginManifests []*Manifest, opts *SanitizeOptions) {
 
 	if o.MatterGoatSettings.GoatCitadelToken != nil && *o.MatterGoatSettings.GoatCitadelToken != "" {
 		*o.MatterGoatSettings.GoatCitadelToken = FakeSetting
+	}
+
+	if o.MatterGoatSettings.GoatCitadelCallbackToken != nil && *o.MatterGoatSettings.GoatCitadelCallbackToken != "" {
+		*o.MatterGoatSettings.GoatCitadelCallbackToken = FakeSetting
 	}
 
 	if o.FileSettings.PublicLinkSalt != nil {

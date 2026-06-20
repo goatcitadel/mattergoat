@@ -87,6 +87,7 @@ func TestMatterGoatSettingsSetDefaultsAndValidate(t *testing.T) {
 	assert.Equal(t, MatterGoatProfileConservative, *s.DefaultProfile)
 	assert.Equal(t, MatterGoatMemoryProposeOnly, *s.DefaultMemoryBehavior)
 	assert.Equal(t, MatterGoatDefaultMaxAgentsPerSession, *s.MaxAgentsPerSession)
+	assert.Equal(t, "", *s.GoatCitadelCallbackToken)
 	assert.Nil(t, s.isValid())
 
 	// Disabled feature skips validation entirely.

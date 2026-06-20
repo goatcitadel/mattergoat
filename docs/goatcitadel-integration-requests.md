@@ -167,34 +167,38 @@ existing profiles by `bridge_agent_id` (upsert, not duplicate). Trigger:
 `POST {MATTERGOAT_BASE_URL}/api/v4/mattergoat/agent_profiles/sync` (requires the
 `manage_mattergoat_agent_profiles` permission).
 
-*Follow-ups:* discovered profiles post as the MatterGoat system bot until a
-per-agent bot is provisioned, and Phase 1 turns still run on the default
-provider/model — wiring `agent_ref` → GoatCitadel agent selection in the turn
-handler (so each discovered agent runs as itself) is a separate step.
+*Done since:* each discovered agent gets its own bot identity (so it posts as
+itself, not the system bot), and the GoatCitadel turn handler runs each agent as
+itself — its `preferredProviderId`/`preferredModel` and persona `promptFraming`.
 
 ## Phase 3 — Approvals + provenance read (needed before tool actions)
 
-1. **Approval request (GoatCitadel → MatterGoat).** When a turn needs human
-   approval, GoatCitadel calls MatterGoat (signed):
+1. **Approval request (GoatCitadel → MatterGoat) — implemented.** When a turn needs
+   human approval, GoatCitadel POSTs (authenticated by the shared
+   `GoatCitadelCallbackToken` sent as `Authorization: Bearer <token>`, not a user
+   session):
    `POST {MATTERGOAT_BASE_URL}/api/v4/mattergoat/runtime/approvals`
    ```json
    {"session_id":"...","turn_id":"...","agent_ref":"...","action":"restart_service",
     "risk_level":"high","reason":"...","affected_resources":["..."]}
    ```
-   MatterGoat creates an `MGApproval`, surfaces it to humans, and returns the
-   decision (poll `GET .../approvals/{id}` or a signed callback). GoatCitadel must
-   not proceed with the action until approved. *(This MatterGoat endpoint does not
-   exist yet — it is a MatterGoat-side follow-up that pairs with this contract.)*
-   *(MatterGoat-side: `MGApproval` is session-scoped today; it must gain `TurnId`
-   and `ExpiresAt` to correlate the approval to its turn and time out. Bind the
-   decision to the exact `action`/`affected_resources` — e.g. an action hash the
-   decision echoes — to prevent approve-A / execute-B confusion.)*
-2. **Run / provenance read (MatterGoat → GoatCitadel).**
+   MatterGoat records an `MGApproval` (carrying `TurnId`/`ExpiresAt`; `agent_ref` is
+   resolved to its mirrored profile), pauses the session (`awaiting_approval`), and
+   surfaces it to humans. GoatCitadel polls the decision at
+   `GET {MATTERGOAT_BASE_URL}/api/v4/mattergoat/runtime/approvals/{approval_id}` (same
+   token) and must not proceed until `status` is `approved`; a human resolves via the
+   existing session approval-resolve flow.
+   *(Hardening follow-ups: bind the decision to the exact `action`/`affected_resources`
+   — e.g. an action hash echoed in the decision — to prevent approve-A / execute-B
+   confusion; and evolve the shared bearer token to signed callbacks / mTLS.)*
+2. **Run / provenance read (MatterGoat → GoatCitadel) — deferred.**
    `GET {GOATCITADEL_BASE_URL}/api/v1/runs/{run_id}` → status, evidence, tool calls,
    provider/model — so MatterGoat displays provenance without holding canonical
-   runtime state. *(MatterGoat-side: persisting provenance needs
-   `MGTurn.Provider/Model/RunId` columns + an `mg_run_id` post prop + a migration;
-   the `mg_provider`/`mg_model` post props already exist.)*
+   runtime state. This is deferred because GoatCitadel's current `turns:complete` is
+   stateless (it returns a `run_id` for correlation but does not persist a durable
+   run), so there is nothing to read back yet. It belongs with full session/tool
+   execution. The MatterGoat receiving side is already in place:
+   `MGTurn.Provider/Model/RunId` columns + the `mg_run_id` post prop exist.
 
 ## Phase 4 — Streaming, A2A, webhooks, memory (later)
 

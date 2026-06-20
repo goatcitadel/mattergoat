@@ -4,8 +4,10 @@
 package api4
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 
@@ -42,6 +44,11 @@ func (api *API) InitMatterGoat() {
 	r.Handle("/sessions/{session_id:[A-Za-z0-9]+}/approvals", api.APISessionRequired(getSessionApprovals)).Methods(http.MethodGet)
 	r.Handle("/sessions/{session_id:[A-Za-z0-9]+}/approvals", api.APISessionRequired(requestSessionApproval)).Methods(http.MethodPost)
 	r.Handle("/approvals/{approval_id:[A-Za-z0-9]+}/resolve", api.APISessionRequired(resolveApproval)).Methods(http.MethodPost)
+
+	// Inbound runtime callbacks (GoatCitadel → MatterGoat), authenticated by the
+	// shared GoatCitadelCallbackToken rather than a user session.
+	r.Handle("/runtime/approvals", api.APIHandler(receiveRuntimeApproval)).Methods(http.MethodPost)
+	r.Handle("/runtime/approvals/{approval_id:[A-Za-z0-9]+}", api.APIHandler(getRuntimeApproval)).Methods(http.MethodGet)
 
 	// Memory proposals
 	r.Handle("/sessions/{session_id:[A-Za-z0-9]+}/memory_proposals", api.APISessionRequired(getSessionMemoryProposals)).Methods(http.MethodGet)
@@ -479,6 +486,78 @@ func getSessionApprovals(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	mgWriteJSON(c, w, approvals)
+}
+
+// mgAuthorizeRuntimeCallback authenticates an inbound GoatCitadel callback against
+// the shared GoatCitadelCallbackToken. Sets c.Err (401) and returns false on
+// failure (including when no callback token is configured, i.e. callbacks off).
+func mgAuthorizeRuntimeCallback(c *Context, r *http.Request) bool {
+	configured := ""
+	if t := c.App.Config().MatterGoatSettings.GoatCitadelCallbackToken; t != nil {
+		configured = strings.TrimSpace(*t)
+	}
+	if configured == "" {
+		c.Err = model.NewAppError("mgAuthorizeRuntimeCallback", "api.mattergoat.callback_disabled", nil, "", http.StatusUnauthorized)
+		return false
+	}
+	provided := ""
+	if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") {
+		provided = strings.TrimSpace(strings.TrimPrefix(auth, "Bearer "))
+	}
+	if provided == "" || subtle.ConstantTimeCompare([]byte(provided), []byte(configured)) != 1 {
+		c.Err = model.NewAppError("mgAuthorizeRuntimeCallback", "api.mattergoat.callback_unauthorized", nil, "", http.StatusUnauthorized)
+		return false
+	}
+	return true
+}
+
+// receiveRuntimeApproval records an approval requested by the GoatCitadel runtime
+// (machine-to-machine; not a user session).
+func receiveRuntimeApproval(c *Context, w http.ResponseWriter, r *http.Request) {
+	requireMatterGoatEnabled(c)
+	if c.Err != nil {
+		return
+	}
+	if !mgAuthorizeRuntimeCallback(c, r) {
+		return
+	}
+
+	var req model.MGRuntimeApprovalRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		c.SetInvalidParamWithErr("body", err)
+		return
+	}
+
+	auditRec := c.MakeAuditRecord(model.AuditEventMGRequestApproval, model.AuditStatusFail)
+	defer c.LogAuditRec(auditRec)
+	model.AddEventParameterToAuditRec(auditRec, "session_id", req.SessionID)
+
+	approval, err := c.App.MGCreateRuntimeApproval(c.AppContext, req)
+	if err != nil {
+		c.Err = err
+		return
+	}
+	auditRec.Success()
+	auditRec.AddEventResultState(approval)
+	w.WriteHeader(http.StatusCreated)
+	mgWriteJSON(c, w, approval)
+}
+
+// getRuntimeApproval lets GoatCitadel poll an approval's decision.
+func getRuntimeApproval(c *Context, w http.ResponseWriter, r *http.Request) {
+	requireMatterGoatEnabled(c)
+	if c.Err != nil {
+		return
+	}
+	if !mgAuthorizeRuntimeCallback(c, r) {
+		return
+	}
+	approval, err := c.App.MGGetApproval(mgVar(r, "approval_id"))
+	if err != nil {
+		c.Err = err
+		return
+	}
+	mgWriteJSON(c, w, approval)
 }
 
 func requestSessionApproval(c *Context, w http.ResponseWriter, r *http.Request) {
