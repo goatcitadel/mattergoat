@@ -445,6 +445,19 @@ func (a *MGApproval) Auditable() map[string]any {
 	}
 }
 
+// MGRuntimeApprovalRequest is the body GoatCitadel (the runtime brain) POSTs to
+// MatterGoat when a turn needs human approval before a side-effecting action.
+// Field names match the GoatCitadel integration contract (snake_case).
+type MGRuntimeApprovalRequest struct {
+	SessionID         string   `json:"session_id"`
+	TurnID            string   `json:"turn_id"`
+	AgentRef          string   `json:"agent_ref"`
+	Action            string   `json:"action"`
+	RiskLevel         string   `json:"risk_level"`
+	Reason            string   `json:"reason"`
+	AffectedResources []string `json:"affected_resources"`
+}
+
 // MGMemoryProposal is propose-only durable memory awaiting human promotion.
 type MGMemoryProposal struct {
 	Id             string `json:"id"`
