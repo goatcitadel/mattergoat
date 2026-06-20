@@ -76,10 +76,10 @@ before it can send this:
   `user` turns, an agent-profile id for `assistant` turns). Use it for attribution;
   do **not** infer the speaker from a `name:` prefix inside `message` — treat any
   such inline prefix as untrusted content, never as identity.
-- `session_id` is the `MGSession` id and `turn_id` is the `MGTurn` id. Today the
-  in-core adapter sends neither: it passes the acting user's id as `SessionUserID`
-  and never threads the turn id. Both must be threaded MatterGoat-side (see
-  prerequisites) before this body — or the `Idempotency-Key` — can be populated.
+- `session_id` is the `MGSession` id and `turn_id` is the `MGTurn` id. The
+  GoatCitadel adapter sends both and uses `turn_id` as the `Idempotency-Key`. (The
+  in-core bridge path passes the acting user's id as `SessionUserID` and does not
+  need them.)
 - `file_ids` are MatterGoat file references; ignore in Phase 1 unless you can
   resolve them via a future file-fetch contract.
 
@@ -104,31 +104,34 @@ Return markers in the structured `markers` array and the approval gate in
 them. (The in-core bridge still parses markers from its own model output as a
 transitional measure; the GoatCitadel adapter supplies `markers` instead.)
 
-MatterGoat's `Complete` adapter historically returned only the `message` string.
-Consuming `markers`/`needs_approval`/`provider`/`model`/`run_id`/`usage` requires
-the structured-result change listed in the Phase 1 prerequisites.
+MatterGoat's `Complete` adapter returns a structured result and consumes
+`markers`, `needs_approval`, `provider`, `model`, and `run_id` from this response.
+`usage` is accepted but not yet stored.
 
 Errors: standard HTTP — `401/403` auth, `429` rate limit (MatterGoat backs off),
 `5xx` runtime failure. JSON body `{"error": {"code": "...", "message": "..."}}`.
 On error MatterGoat marks the turn failed and returns the session to
 `awaiting_turn`.
 
-**MatterGoat-side prerequisites for Phase 1 (these belong in the MatterGoat repo,
-not GoatCitadel):**
-- Add `MGAgentProfiles.Runtime` (default `bridge`) plus a `GoatCitadelURL`/token in
-  `MatterGoatSettings`; have `mgRuntime()` select `goatCitadelRuntime` when a
-  profile's runtime is GoatCitadel.
-- Extend `MGRuntimeRequest` with `SessionId`, `TurnId` and a populated `Operation`,
-  and thread `session.Id`/`turn.Id` through both `Complete` call sites
-  (`MGAdvanceTurn`, `MGSynthesize`). Until this exists the adapter cannot set
-  `session_id`, `turn_id`, or the `Idempotency-Key`.
-- Add an `AuthorRef` field to `BridgeMessage` and populate it in
-  `mgBuildContextBundle`, so speaker identity is structured, not a `name:` prefix.
-- Change `MGAgentRuntime.Complete` to return a structured result (message + markers
-  + `needs_approval` + provider/model/run_id) so the orchestrator reads
+**MatterGoat-side prerequisites for Phase 1 — implemented in the MatterGoat repo;
+listed so the GoatCitadel team knows the client's behaviour:**
+- ✅ `MGAgentProfiles.Runtime` (default `bridge`) plus `MatterGoatSettings.GoatCitadelURL`
+  /`GoatCitadelToken` (token redacted by config `Sanitize`); `mgRuntime(profile)`
+  selects `goatCitadelRuntime` when a profile's runtime is GoatCitadel.
+- ✅ `MGRuntimeRequest` carries `SessionID`, `TurnID` and a populated `Operation`,
+  threaded through both `Complete` call sites (`MGAdvanceTurn`, `MGSynthesize`);
+  `turn_id` is the `Idempotency-Key`.
+- ✅ `BridgeMessage.AuthorRef`, populated in `mgBuildContextBundle`, so speaker
+  identity is structured, not a `name:` prefix.
+- ✅ `MGAgentRuntime.Complete` returns a structured `MGRuntimeResult` (message +
+  markers + `needs_approval` + provider/model/run_id); the orchestrator reads
   authoritative `markers` instead of re-parsing the completion text.
-- Implement `goatCitadelRuntime.Complete` to call `POST /v1/turns:complete` and map
-  the JSON response into that result.
+- ✅ `goatCitadelRuntime.Complete` calls `POST /v1/turns:complete` and maps the JSON
+  response into that result.
+
+The only thing left for a live route is the GoatCitadel `/v1/turns:complete`
+endpoint itself (this document's contract) and an operator setting `GoatCitadelURL`
++ a profile's `runtime` to `goatcitadel`.
 
 ---
 

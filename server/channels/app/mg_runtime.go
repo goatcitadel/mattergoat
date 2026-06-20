@@ -14,8 +14,16 @@
 package app
 
 import (
-	"errors"
+	"bytes"
+	"encoding/json"
+	"io"
+	"net/http"
+	"strings"
+	"time"
 
+	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/shared/request"
 )
 
@@ -62,11 +70,28 @@ type MGAgentRuntime interface {
 	Complete(rctx request.CTX, req MGRuntimeRequest) (MGRuntimeResult, error)
 }
 
-// mgRuntime returns the runtime adapter for the current configuration. Today it
-// is always the mattermost-plugin-ai bridge; once MGAgentProfiles carries a
-// Runtime field (and provider/endpoint config exists) this becomes the per-agent
-// selection point (e.g. goatCitadelRuntime for GoatCitadel-backed agents).
-func (a *App) mgRuntime() MGAgentRuntime {
+// mgRuntime returns the runtime adapter for the given agent profile. Profiles
+// default to the in-core mattermost-plugin-ai bridge; a profile whose Runtime is
+// GoatCitadel routes its turns to the external runtime over HTTP. A profile
+// configured for GoatCitadel but with no endpoint set yields an adapter that
+// fails the turn with a clear "not configured" error, rather than silently
+// running the turn on a different runtime than the operator selected.
+func (a *App) mgRuntime(profile *model.MGAgentProfile) MGAgentRuntime {
+	if profile != nil && profile.Runtime == model.MGRuntimeGoatCitadel {
+		cfg := a.Config().MatterGoatSettings
+		endpoint, token := "", ""
+		if cfg.GoatCitadelURL != nil {
+			endpoint = *cfg.GoatCitadelURL
+		}
+		if cfg.GoatCitadelToken != nil {
+			token = *cfg.GoatCitadelToken
+		}
+		return &goatCitadelRuntime{
+			endpoint: endpoint,
+			token:    token,
+			client:   &http.Client{Timeout: goatCitadelHTTPTimeout},
+		}
+	}
 	return &bridgeAgentRuntime{app: a}
 }
 
@@ -104,21 +129,154 @@ func (r *bridgeAgentRuntime) Complete(rctx request.CTX, req MGRuntimeRequest) (M
 	}, nil
 }
 
-// goatCitadelRuntime is the documented extension point for routing turns to
-// GoatCitadel (the external AI runtime brain) over HTTP/A2A/webhook. It is not
-// wired into mgRuntime() yet — selection requires an MGAgentProfiles.Runtime
-// field plus endpoint/credential config (see docs/mattergoat-ai-collaboration.md
-// and the GoatCitadel integration follow-ups). Implementing this must NOT modify
+const (
+	// goatCitadelHTTPTimeout bounds a single turn call. Turns can be slow (tool
+	// use, multiple model calls), so this is generous; streaming/webhooks (Phase 4)
+	// are the answer for genuinely long-running turns.
+	goatCitadelHTTPTimeout = 120 * time.Second
+	// goatCitadelMaxResponseBytes caps how much of a response body is read.
+	goatCitadelMaxResponseBytes = 8 << 20 // 8 MiB
+)
+
+// goatCitadelRuntime routes turns to GoatCitadel (the external AI runtime brain)
+// via POST {endpoint}/v1/turns:complete. Selection happens in mgRuntime() when a
+// profile's Runtime is GoatCitadel. This adapter only speaks the documented HTTP
+// contract (docs/goatcitadel-integration-requests.md); it must NOT modify
 // GoatCitadel from this repository.
 type goatCitadelRuntime struct {
-	app      *App
 	endpoint string
+	token    string
+	client   *http.Client
 }
 
 func (r *goatCitadelRuntime) Name() string { return "goatcitadel" }
 
-func (r *goatCitadelRuntime) Complete(_ request.CTX, _ MGRuntimeRequest) (MGRuntimeResult, error) {
-	return MGRuntimeResult{}, errors.New("mattergoat: GoatCitadel runtime adapter not configured")
+func (r *goatCitadelRuntime) Complete(rctx request.CTX, req MGRuntimeRequest) (MGRuntimeResult, error) {
+	if r.endpoint == "" {
+		return MGRuntimeResult{}, errors.New("mattergoat: GoatCitadel runtime adapter not configured")
+	}
+
+	payload, err := json.Marshal(newGoatCitadelTurnRequest(req))
+	if err != nil {
+		return MGRuntimeResult{}, errors.Wrap(err, "mattergoat: marshal GoatCitadel turn request")
+	}
+
+	url := strings.TrimRight(r.endpoint, "/") + "/v1/turns:complete"
+	httpReq, err := http.NewRequestWithContext(rctx.Context(), http.MethodPost, url, bytes.NewReader(payload))
+	if err != nil {
+		return MGRuntimeResult{}, errors.Wrap(err, "mattergoat: build GoatCitadel turn request")
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+r.token)
+	httpReq.Header.Set("Content-Type", "application/json")
+	// Idempotency-Key lets GoatCitadel dedupe a retried turn.
+	httpReq.Header.Set("Idempotency-Key", req.TurnID)
+
+	client := r.client
+	if client == nil {
+		client = &http.Client{Timeout: goatCitadelHTTPTimeout}
+	}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return MGRuntimeResult{}, errors.Wrap(err, "mattergoat: call GoatCitadel turns:complete")
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, goatCitadelMaxResponseBytes))
+	if err != nil {
+		return MGRuntimeResult{}, errors.Wrap(err, "mattergoat: read GoatCitadel response")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return MGRuntimeResult{}, goatCitadelHTTPError(resp.StatusCode, body)
+	}
+
+	var parsed goatCitadelTurnResponse
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return MGRuntimeResult{}, errors.Wrap(err, "mattergoat: decode GoatCitadel response")
+	}
+	return parsed.toResult(), nil
+}
+
+// --- GoatCitadel HTTP contract (docs/goatcitadel-integration-requests.md) ---
+
+type goatCitadelTurnRequest struct {
+	SessionID  string               `json:"session_id"`
+	TurnID     string               `json:"turn_id"`
+	AgentRef   string               `json:"agent_ref"`
+	Operation  string               `json:"operation"`
+	UserRef    string               `json:"user_ref"`
+	ChannelRef string               `json:"channel_ref"`
+	Messages   []goatCitadelMessage `json:"messages"`
+}
+
+type goatCitadelMessage struct {
+	Role      string   `json:"role"`
+	AuthorRef string   `json:"author_ref,omitempty"`
+	Message   string   `json:"message"`
+	FileIDs   []string `json:"file_ids"`
+}
+
+func newGoatCitadelTurnRequest(req MGRuntimeRequest) goatCitadelTurnRequest {
+	op := req.Operation
+	if op == "" {
+		op = mgClientOperation
+	}
+	messages := make([]goatCitadelMessage, 0, len(req.Messages))
+	for _, m := range req.Messages {
+		fileIDs := m.FileIDs
+		if fileIDs == nil {
+			fileIDs = []string{}
+		}
+		messages = append(messages, goatCitadelMessage{
+			Role:      m.Role,
+			AuthorRef: m.AuthorRef,
+			Message:   m.Message,
+			FileIDs:   fileIDs,
+		})
+	}
+	return goatCitadelTurnRequest{
+		SessionID:  req.SessionID,
+		TurnID:     req.TurnID,
+		AgentRef:   req.AgentRef,
+		Operation:  op,
+		UserRef:    req.UserID,
+		ChannelRef: req.ChannelID,
+		Messages:   messages,
+	}
+}
+
+type goatCitadelTurnResponse struct {
+	Message       string   `json:"message"`
+	Markers       []string `json:"markers"`
+	NeedsApproval bool     `json:"needs_approval"`
+	Provider      string   `json:"provider"`
+	Model         string   `json:"model"`
+	RunID         string   `json:"run_id"`
+}
+
+func (resp goatCitadelTurnResponse) toResult() MGRuntimeResult {
+	return MGRuntimeResult{
+		Message:       resp.Message,
+		Markers:       resp.Markers,
+		NeedsApproval: resp.NeedsApproval,
+		Provider:      resp.Provider,
+		Model:         resp.Model,
+		RunID:         resp.RunID,
+	}
+}
+
+// goatCitadelHTTPError maps a non-200 response to an error, surfacing the JSON
+// {"error":{"code","message"}} envelope when present.
+func goatCitadelHTTPError(status int, body []byte) error {
+	var env struct {
+		Error struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(body, &env); err == nil && env.Error.Message != "" {
+		return errors.Errorf("mattergoat: GoatCitadel turns:complete returned %d: %s", status, env.Error.Message)
+	}
+	return errors.Errorf("mattergoat: GoatCitadel turns:complete returned %d", status)
 }
 
 var _ MGAgentRuntime = (*bridgeAgentRuntime)(nil)

@@ -322,7 +322,7 @@ func (a *App) MGAdvanceTurn(rctx request.CTX, sessionID string) (bool, *model.Ap
 	// Build the scoped context bundle (the security boundary) and run the turn
 	// through the runtime adapter (bridge today, GoatCitadel later).
 	messages := a.mgBuildContextBundle(rctx, session, participant, profile)
-	result, cErr := a.mgRuntime().Complete(rctx, MGRuntimeRequest{
+	result, cErr := a.mgRuntime(profile).Complete(rctx, MGRuntimeRequest{
 		SessionID:     session.Id,
 		TurnID:        turn.Id,
 		SessionUserID: rctx.Session().UserId,
@@ -430,7 +430,7 @@ func (a *App) MGSynthesize(rctx request.CTX, sessionID string) *model.AppError {
 	turn := &model.MGTurn{SessionId: sessionID, AgentProfileId: profile.Id, TurnIndex: len(turns), Marker: model.MGMarkerFinalSynthesis, Status: model.MGTurnStatusComplete}
 	turn.PreSave()
 
-	result, cErr := a.mgRuntime().Complete(rctx, MGRuntimeRequest{
+	result, cErr := a.mgRuntime(profile).Complete(rctx, MGRuntimeRequest{
 		SessionID:     session.Id,
 		TurnID:        turn.Id,
 		SessionUserID: rctx.Session().UserId,
