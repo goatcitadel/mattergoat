@@ -23,8 +23,12 @@ import (
 // the agent within the selected runtime (a bridge agent id today; a GoatCitadel
 // agent reference later). Messages is the scoped context bundle the orchestrator
 // already permission-filtered — runtimes must treat it as the full allowed
-// context and never widen it.
+// context and never widen it. SessionID/TurnID are the MGSession/MGTurn ids (the
+// turn id is the idempotency key for external runtimes); SessionUserID is the
+// acting user's auth session, used by the in-core bridge.
 type MGRuntimeRequest struct {
+	SessionID     string
+	TurnID        string
 	SessionUserID string
 	AgentRef      string
 	Messages      []BridgeMessage
@@ -33,13 +37,29 @@ type MGRuntimeRequest struct {
 	Operation     string
 }
 
+// MGRuntimeResult is the structured outcome of one agent turn. The orchestrator
+// makes control-flow decisions (final synthesis, approval gate) from these
+// STRUCTURED fields — never by re-parsing Message. Each adapter populates
+// Markers/NeedsApproval from a trusted source: the in-core bridge parses them
+// from its own model output (transitional), while the GoatCitadel adapter fills
+// them from the structured /v1/turns:complete response. Treating Message text as
+// the marker channel would let untrusted prior-turn content spoof control signals.
+type MGRuntimeResult struct {
+	Message       string
+	Markers       []string
+	NeedsApproval bool
+	Provider      string
+	Model         string
+	RunID         string
+}
+
 // MGAgentRuntime runs one agent turn. Implementations must not perform
 // side-effecting tool actions without an approval recorded by the orchestrator.
 type MGAgentRuntime interface {
 	// Name identifies the runtime for provenance/audit.
 	Name() string
-	// Complete returns the agent's message text for the given request.
-	Complete(rctx request.CTX, req MGRuntimeRequest) (string, error)
+	// Complete runs one agent turn and returns its structured result.
+	Complete(rctx request.CTX, req MGRuntimeRequest) (MGRuntimeResult, error)
 }
 
 // mgRuntime returns the runtime adapter for the current configuration. Today it
@@ -58,18 +78,30 @@ type bridgeAgentRuntime struct {
 
 func (r *bridgeAgentRuntime) Name() string { return "mattergoat_bridge" }
 
-func (r *bridgeAgentRuntime) Complete(rctx request.CTX, req MGRuntimeRequest) (string, error) {
+func (r *bridgeAgentRuntime) Complete(rctx request.CTX, req MGRuntimeRequest) (MGRuntimeResult, error) {
 	op := req.Operation
 	if op == "" {
 		op = mgClientOperation
 	}
-	return r.app.ch.agentsBridge.AgentCompletion(req.SessionUserID, req.AgentRef, BridgeCompletionRequest{
+	text, err := r.app.ch.agentsBridge.AgentCompletion(req.SessionUserID, req.AgentRef, BridgeCompletionRequest{
 		Operation:       BridgeOperationCollaborate,
 		ClientOperation: op,
 		Messages:        req.Messages,
 		UserID:          req.UserID,
 		ChannelID:       req.ChannelID,
 	})
+	if err != nil {
+		return MGRuntimeResult{}, err
+	}
+	// The in-core bridge returns only text — the model's own (trusted) output for
+	// this turn. Parse protocol markers and the approval gate from it here so the
+	// orchestrator can treat MGRuntimeResult as authoritative. An external runtime
+	// (GoatCitadel) supplies these structurally instead of via text.
+	return MGRuntimeResult{
+		Message:       text,
+		Markers:       mgParseMarkers(text),
+		NeedsApproval: mgNeedsApproval(text),
+	}, nil
 }
 
 // goatCitadelRuntime is the documented extension point for routing turns to
@@ -85,8 +117,8 @@ type goatCitadelRuntime struct {
 
 func (r *goatCitadelRuntime) Name() string { return "goatcitadel" }
 
-func (r *goatCitadelRuntime) Complete(_ request.CTX, _ MGRuntimeRequest) (string, error) {
-	return "", errors.New("mattergoat: GoatCitadel runtime adapter not configured")
+func (r *goatCitadelRuntime) Complete(_ request.CTX, _ MGRuntimeRequest) (MGRuntimeResult, error) {
+	return MGRuntimeResult{}, errors.New("mattergoat: GoatCitadel runtime adapter not configured")
 }
 
 var _ MGAgentRuntime = (*bridgeAgentRuntime)(nil)

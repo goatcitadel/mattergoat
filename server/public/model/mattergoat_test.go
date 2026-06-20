@@ -15,6 +15,7 @@ func TestMGAgentProfilePreSaveAndValidate(t *testing.T) {
 
 	assert.NotEmpty(t, p.Id)
 	assert.Equal(t, MGTrustAdvisory, p.TrustLevel)
+	assert.Equal(t, MGRuntimeBridge, p.Runtime)
 	assert.NotZero(t, p.CreateAt)
 	assert.NotZero(t, p.UpdateAt)
 	// JSON-ish fields get safe defaults so the store never writes NULL/invalid JSON.
@@ -55,6 +56,27 @@ func TestMGParticipantLeastPrivilegeDefault(t *testing.T) {
 	assert.Equal(t, `{"scope":"current_thread"}`, p.ContextGrant)
 	assert.NotZero(t, p.JoinedAt)
 	assert.Nil(t, p.IsValid())
+}
+
+func TestMGApprovalPreSaveDefaults(t *testing.T) {
+	a := &MGApproval{SessionId: NewId(), TurnId: NewId(), Action: "restart_service"}
+	a.PreSave()
+
+	assert.NotEmpty(t, a.Id)
+	assert.Equal(t, MGApprovalStatusPending, a.Status)
+	assert.Equal(t, MGRiskMedium, a.RiskLevel)
+	assert.Equal(t, "[]", a.AffectedResources)
+	assert.NotZero(t, a.CreateAt)
+	// TurnId correlates the approval to its originating turn; PreSave must keep it.
+	assert.NotEmpty(t, a.TurnId)
+	// Pending approvals must carry a TTL so a stale request can't be acted on later.
+	assert.Equal(t, a.CreateAt+MGApprovalDefaultTTLMillis, a.ExpiresAt)
+	assert.Nil(t, a.IsValid())
+
+	// An explicit expiry is preserved rather than overwritten.
+	fixed := &MGApproval{SessionId: NewId(), Action: "x", ExpiresAt: 123}
+	fixed.PreSave()
+	assert.Equal(t, int64(123), fixed.ExpiresAt)
 }
 
 func TestMatterGoatSettingsSetDefaultsAndValidate(t *testing.T) {
