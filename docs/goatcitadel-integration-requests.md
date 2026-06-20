@@ -45,7 +45,12 @@ optional until needed.
 
 One endpoint. This is all GoatCitadel needs for MatterGoat to route turns to it.
 
-`POST {GOATCITADEL_BASE_URL}/v1/turns:complete`
+`POST {GOATCITADEL_BASE_URL}/api/v1/turns:complete`
+
+`GOATCITADEL_BASE_URL` is the gateway base (e.g. `https://host:8080`); GoatCitadel
+serves its API under `/api/v1`, which is what gives this route operator-bearer auth
+and automatic `Idempotency-Key` dedup. Implemented in the GoatCitadel repo as the
+Fastify route `apps/gateway/src/routes/turns.ts`.
 
 Headers:
 - `Authorization: Bearer <token>`  (configured per MatterGoat instance)
@@ -126,10 +131,10 @@ listed so the GoatCitadel team knows the client's behaviour:**
 - ✅ `MGAgentRuntime.Complete` returns a structured `MGRuntimeResult` (message +
   markers + `needs_approval` + provider/model/run_id); the orchestrator reads
   authoritative `markers` instead of re-parsing the completion text.
-- ✅ `goatCitadelRuntime.Complete` calls `POST /v1/turns:complete` and maps the JSON
+- ✅ `goatCitadelRuntime.Complete` calls `POST /api/v1/turns:complete` and maps the JSON
   response into that result.
 
-The only thing left for a live route is the GoatCitadel `/v1/turns:complete`
+The only thing left for a live route is the GoatCitadel `/api/v1/turns:complete`
 endpoint itself (this document's contract) and an operator setting `GoatCitadelURL`
 + a profile's `runtime` to `goatcitadel`.
 
@@ -139,7 +144,7 @@ endpoint itself (this document's contract) and an operator setting `GoatCitadelU
 
 So MatterGoat can populate `MGAgentProfiles` from GoatCitadel rather than by hand.
 
-`GET {GOATCITADEL_BASE_URL}/v1/agents`  → 
+`GET {GOATCITADEL_BASE_URL}/api/v1/agents`  → 
 ```json
 {"agents": [
   {"id": "...", "display_name": "...", "owner": "team|user|system|external",
@@ -166,7 +171,7 @@ So MatterGoat can populate `MGAgentProfiles` from GoatCitadel rather than by han
    decision to the exact `action`/`affected_resources` — e.g. an action hash the
    decision echoes — to prevent approve-A / execute-B confusion.)*
 2. **Run / provenance read (MatterGoat → GoatCitadel).**
-   `GET {GOATCITADEL_BASE_URL}/v1/runs/{run_id}` → status, evidence, tool calls,
+   `GET {GOATCITADEL_BASE_URL}/api/v1/runs/{run_id}` → status, evidence, tool calls,
    provider/model — so MatterGoat displays provenance without holding canonical
    runtime state. *(MatterGoat-side: persisting provenance needs
    `MGTurn.Provider/Model/RunId` columns + an `mg_run_id` post prop + a migration;
@@ -174,7 +179,7 @@ So MatterGoat can populate `MGAgentProfiles` from GoatCitadel rather than by han
 
 ## Phase 4 — Streaming, A2A, webhooks, memory (later)
 
-- **Streaming completion:** SSE variant of `/v1/turns:complete` for token
+- **Streaming completion:** SSE variant of `/api/v1/turns:complete` for token
   streaming into the thread.
 - **A2A handoff:** agent-to-agent handoff envelope (from/to agent, session, turn).
 - **Webhook events:** async schema for `turn.started`, `turn.completed`,
@@ -195,7 +200,7 @@ So MatterGoat can populate `MGAgentProfiles` from GoatCitadel rather than by han
 | Want | Implement | When |
 |---|---|---|
 | Keep MVP working | nothing | now |
-| GoatCitadel runs turns | Phase 1 `POST /v1/turns:complete` + bearer auth | first |
-| Auto-populate agents | Phase 2 `GET /v1/agents` | next |
+| GoatCitadel runs turns | Phase 1 `POST /api/v1/turns:complete` + bearer auth | first |
+| Auto-populate agents | Phase 2 `GET /api/v1/agents` | next |
 | Tool actions / approvals / provenance | Phase 3 | before any side effects |
 | Streaming, A2A, webhooks, memory | Phase 4 | later |

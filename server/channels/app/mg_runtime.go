@@ -50,7 +50,7 @@ type MGRuntimeRequest struct {
 // STRUCTURED fields — never by re-parsing Message. Each adapter populates
 // Markers/NeedsApproval from a trusted source: the in-core bridge parses them
 // from its own model output (transitional), while the GoatCitadel adapter fills
-// them from the structured /v1/turns:complete response. Treating Message text as
+// them from the structured /api/v1/turns:complete response. Treating Message text as
 // the marker channel would let untrusted prior-turn content spoof control signals.
 type MGRuntimeResult struct {
 	Message       string
@@ -139,7 +139,7 @@ const (
 )
 
 // goatCitadelRuntime routes turns to GoatCitadel (the external AI runtime brain)
-// via POST {endpoint}/v1/turns:complete. Selection happens in mgRuntime() when a
+// via POST {endpoint}/api/v1/turns:complete. Selection happens in mgRuntime() when a
 // profile's Runtime is GoatCitadel. This adapter only speaks the documented HTTP
 // contract (docs/goatcitadel-integration-requests.md); it must NOT modify
 // GoatCitadel from this repository.
@@ -161,7 +161,7 @@ func (r *goatCitadelRuntime) Complete(rctx request.CTX, req MGRuntimeRequest) (M
 		return MGRuntimeResult{}, errors.Wrap(err, "mattergoat: marshal GoatCitadel turn request")
 	}
 
-	url := strings.TrimRight(r.endpoint, "/") + "/v1/turns:complete"
+	url := strings.TrimRight(r.endpoint, "/") + "/api/v1/turns:complete"
 	httpReq, err := http.NewRequestWithContext(rctx.Context(), http.MethodPost, url, bytes.NewReader(payload))
 	if err != nil {
 		return MGRuntimeResult{}, errors.Wrap(err, "mattergoat: build GoatCitadel turn request")
