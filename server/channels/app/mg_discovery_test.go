@@ -6,6 +6,7 @@ package app
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -91,4 +92,17 @@ func TestMGDiscoveredAgentToProfile(t *testing.T) {
 	assert.Equal(t, "bot1", p3.BotUserId)
 	assert.Equal(t, int64(123), p3.CreateAt)
 	assert.Equal(t, "Researcher v2", p3.DisplayName)
+}
+
+func TestMGGoatCitadelBotUsername(t *testing.T) {
+	u := mgGoatCitadelBotUsername("agent_01HXYZ")
+
+	// Deterministic, stable across calls (same bot on re-sync).
+	assert.Equal(t, u, mgGoatCitadelBotUsername("agent_01HXYZ"))
+	// gc- + 16 hex chars = 19, a valid Mattermost username.
+	assert.True(t, strings.HasPrefix(u, "gc-"))
+	assert.Len(t, u, 19)
+	assert.True(t, model.IsValidUsername(u))
+	// Distinct agents get distinct usernames.
+	assert.NotEqual(t, u, mgGoatCitadelBotUsername("agent_other"))
 }

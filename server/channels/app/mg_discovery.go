@@ -11,6 +11,8 @@
 package app
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -164,6 +166,15 @@ func (a *App) MGSyncGoatCitadelAgents(rctx request.CTX) ([]*model.MGAgentProfile
 	for _, agent := range discovered {
 		prior := byBridgeID[agent.AgentID]
 		profile := mgDiscoveredAgentToProfile(agent, prior)
+		// Give each agent its own bot identity so it posts as itself, not the
+		// shared system bot. Existing profiles keep their bot (preserved above).
+		if profile.BotUserId == "" {
+			botID, bErr := a.mgEnsureGoatCitadelBot(rctx, agent)
+			if bErr != nil {
+				return nil, bErr
+			}
+			profile.BotUserId = botID
+		}
 		saved, sErr := a.MGSaveAgentProfile(rctx, profile, prior != nil)
 		if sErr != nil {
 			return nil, sErr
@@ -171,4 +182,32 @@ func (a *App) MGSyncGoatCitadelAgents(rctx request.CTX) ([]*model.MGAgentProfile
 		synced = append(synced, saved)
 	}
 	return synced, nil
+}
+
+// mgGoatCitadelBotUsername derives a deterministic, valid bot username from a
+// GoatCitadel agent id (gc- + 16 hex chars of its SHA-256, stable across syncs).
+func mgGoatCitadelBotUsername(agentID string) string {
+	sum := sha256.Sum256([]byte(agentID))
+	return "gc-" + hex.EncodeToString(sum[:8])
+}
+
+// mgEnsureGoatCitadelBot provisions (idempotently) a bot user for a discovered
+// GoatCitadel agent so it posts with its own identity instead of the system bot.
+func (a *App) mgEnsureGoatCitadelBot(rctx request.CTX, agent MGDiscoveredAgent) (string, *model.AppError) {
+	displayName := agent.Name
+	if displayName == "" {
+		displayName = agent.Title
+	}
+	if displayName == "" {
+		displayName = agent.AgentID
+	}
+	botID, err := a.EnsureBot(rctx, mgSystemBotUsername, &model.Bot{
+		Username:    mgGoatCitadelBotUsername(agent.AgentID),
+		DisplayName: displayName,
+		Description: "GoatCitadel agent, discovered via MatterGoat runtime sync.",
+	})
+	if err != nil {
+		return "", mgErr("mgEnsureGoatCitadelBot", "app.mattergoat.goatcitadel.ensure_bot.error", http.StatusInternalServerError, err)
+	}
+	return botID, nil
 }
