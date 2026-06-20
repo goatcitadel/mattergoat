@@ -45,7 +45,7 @@ optional until needed.
 
 One endpoint. This is all GoatCitadel needs for MatterGoat to route turns to it.
 
-`POST {GOATCITADEL_BASE_URL}/api/v1/turns:complete`
+`POST {GOATCITADEL_BASE_URL}/api/v1/turns/complete`
 
 `GOATCITADEL_BASE_URL` is the gateway base (e.g. `https://host:8080`); GoatCitadel
 serves its API under `/api/v1`, which is what gives this route operator-bearer auth
@@ -131,10 +131,10 @@ listed so the GoatCitadel team knows the client's behaviour:**
 - ✅ `MGAgentRuntime.Complete` returns a structured `MGRuntimeResult` (message +
   markers + `needs_approval` + provider/model/run_id); the orchestrator reads
   authoritative `markers` instead of re-parsing the completion text.
-- ✅ `goatCitadelRuntime.Complete` calls `POST /api/v1/turns:complete` and maps the JSON
+- ✅ `goatCitadelRuntime.Complete` calls `POST /api/v1/turns/complete` and maps the JSON
   response into that result.
 
-The only thing left for a live route is the GoatCitadel `/api/v1/turns:complete`
+The only thing left for a live route is the GoatCitadel `/api/v1/turns/complete`
 endpoint itself (this document's contract) and an operator setting `GoatCitadelURL`
 + a profile's `runtime` to `goatcitadel`.
 
@@ -194,7 +194,7 @@ itself — its `preferredProviderId`/`preferredModel` and persona `promptFraming
 2. **Run / provenance read (MatterGoat → GoatCitadel) — deferred.**
    `GET {GOATCITADEL_BASE_URL}/api/v1/runs/{run_id}` → status, evidence, tool calls,
    provider/model — so MatterGoat displays provenance without holding canonical
-   runtime state. This is deferred because GoatCitadel's current `turns:complete` is
+   runtime state. This is deferred because GoatCitadel's current `turns/complete` is
    stateless (it returns a `run_id` for correlation but does not persist a durable
    run), so there is nothing to read back yet. It belongs with full session/tool
    execution. The MatterGoat receiving side is already in place:
@@ -202,7 +202,7 @@ itself — its `preferredProviderId`/`preferredModel` and persona `promptFraming
 
 ## Phase 4 — Streaming, A2A, webhooks, memory (later)
 
-- **Streaming completion:** SSE variant of `/api/v1/turns:complete` for token
+- **Streaming completion:** SSE variant of `/api/v1/turns/complete` for token
   streaming into the thread.
 - **A2A handoff:** agent-to-agent handoff envelope (from/to agent, session, turn).
 - **Webhook events:** async schema for `turn.started`, `turn.completed`,
@@ -223,7 +223,7 @@ itself — its `preferredProviderId`/`preferredModel` and persona `promptFraming
 | Want | Implement | When |
 |---|---|---|
 | Keep MVP working | nothing | now |
-| GoatCitadel runs turns | Phase 1 `POST /api/v1/turns:complete` + bearer auth | first |
+| GoatCitadel runs turns | Phase 1 `POST /api/v1/turns/complete` + bearer auth | first |
 | Auto-populate agents | Phase 2 `GET /api/v1/agents` | next |
 | Tool actions / approvals / provenance | Phase 3 | before any side effects |
 | Streaming, A2A, webhooks, memory | Phase 4 | later |

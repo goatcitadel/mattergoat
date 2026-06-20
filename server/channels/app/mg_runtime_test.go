@@ -45,7 +45,7 @@ func TestGoatCitadelRuntimeComplete(t *testing.T) {
 		assert.Equal(t, "run_1", res.RunID)
 
 		// Request headers + body.
-		assert.Equal(t, "/api/v1/turns:complete", gotPath)
+		assert.Equal(t, "/api/v1/turns/complete", gotPath)
 		assert.Equal(t, "Bearer secret", gotAuth)
 		assert.Equal(t, "t1", gotIdem) // idempotency key is the turn id
 		assert.Equal(t, "s1", gotReq.SessionID)
