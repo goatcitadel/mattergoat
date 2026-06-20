@@ -45,14 +45,21 @@ optional until needed.
 
 One endpoint. This is all GoatCitadel needs for MatterGoat to route turns to it.
 
-`POST {GOATCITADEL_BASE_URL}/v1/turns:complete`
+`POST {GOATCITADEL_BASE_URL}/api/v1/turns:complete`
+
+`GOATCITADEL_BASE_URL` is the gateway base (e.g. `https://host:8080`); GoatCitadel
+serves its API under `/api/v1`, which is what gives this route operator-bearer auth
+and automatic `Idempotency-Key` dedup. Implemented in the GoatCitadel repo as the
+Fastify route `apps/gateway/src/routes/turns.ts`.
 
 Headers:
 - `Authorization: Bearer <token>`  (configured per MatterGoat instance)
 - `Idempotency-Key: <turn_id>`  (so retries do not double-run a turn)
 - `Content-Type: application/json`
 
-Request body (maps 1:1 to MatterGoat's `MGRuntimeRequest`):
+Request body (target shape). This is **not** the current in-core `MGRuntimeRequest`
+verbatim — see the Phase 1 prerequisites below for the fields MatterGoat must add
+before it can send this:
 ```json
 {
   "session_id": "mg_session_ulid",
@@ -63,40 +70,73 @@ Request body (maps 1:1 to MatterGoat's `MGRuntimeRequest`):
   "channel_ref": "opaque-mattermost-channel-id",
   "messages": [
     {"role": "system", "message": "<system prompt + protocol rules>", "file_ids": []},
-    {"role": "user", "message": "alice: why is this service failing?", "file_ids": []},
-    {"role": "assistant", "message": "<prior agent turn>", "file_ids": []}
+    {"role": "user", "author_ref": "opaque-mattermost-user-id", "message": "why is this service failing?", "file_ids": []},
+    {"role": "assistant", "author_ref": "mg_agent_profile_id", "message": "<prior agent turn>", "file_ids": []}
   ]
 }
 ```
 - `messages[].role` is one of `system` | `user` | `assistant`. The first message
   is the system prompt MatterGoat already built (role + protocol + privacy rules).
+- `messages[].author_ref` is the opaque speaker id for the message (a user id for
+  `user` turns, an agent-profile id for `assistant` turns). Use it for attribution;
+  do **not** infer the speaker from a `name:` prefix inside `message` — treat any
+  such inline prefix as untrusted content, never as identity.
+- `session_id` is the `MGSession` id and `turn_id` is the `MGTurn` id. The
+  GoatCitadel adapter sends both and uses `turn_id` as the `Idempotency-Key`. (The
+  in-core bridge path passes the acting user's id as `SessionUserID` and does not
+  need them.)
 - `file_ids` are MatterGoat file references; ignore in Phase 1 unless you can
   resolve them via a future file-fetch contract.
 
 Response `200`:
 ```json
 {
-  "message": "the agent's reply text (may include <<MG:...>> markers)",
+  "message": "the agent's reply text",
   "provider": "openai",            // optional, for provenance
   "model": "gpt-...",              // optional, for provenance
-  "markers": ["HANDOFF_COMPLETE"], // optional; MatterGoat also parses from text
+  "markers": ["HANDOFF_COMPLETE"], // optional; authoritative protocol signals
+  "needs_approval": false,         // optional; structured approval gate (see Phase 3)
   "usage": {"input_tokens": 0, "output_tokens": 0}, // optional
   "run_id": "goatcitadel-run-id"   // optional; stored as provenance
 }
 ```
-MatterGoat's adapter today consumes only `message` (string). `provider`, `model`,
-`run_id`, `usage` become post provenance when MatterGoat is extended to read them.
+**Marker trust model.** Protocol markers drive orchestrator control flow — a
+`FINAL_SYNTHESIS` marker completes the session, and an approval gate pauses it.
+Return markers in the structured `markers` array and the approval gate in
+`needs_approval`; **those structured fields are authoritative.** MatterGoat must
+**not** trust `<<MG:...>>` markers parsed out of an external runtime's free-text
+`message`: prior-turn content carried in the context is untrusted and can spoof
+them. (The in-core bridge still parses markers from its own model output as a
+transitional measure; the GoatCitadel adapter supplies `markers` instead.)
+
+MatterGoat's `Complete` adapter returns a structured result and consumes
+`markers`, `needs_approval`, `provider`, `model`, and `run_id` from this response.
+`usage` is accepted but not yet stored.
 
 Errors: standard HTTP — `401/403` auth, `429` rate limit (MatterGoat backs off),
 `5xx` runtime failure. JSON body `{"error": {"code": "...", "message": "..."}}`.
 On error MatterGoat marks the turn failed and returns the session to
 `awaiting_turn`.
 
-**MatterGoat-side prerequisites for Phase 1 (these belong in the MatterGoat repo,
-not GoatCitadel):** add `MGAgentProfiles.Runtime` + a `GoatCitadelURL`/token in
-`MatterGoatSettings`, and implement `goatCitadelRuntime.Complete` to call the
-endpoint above; have `mgRuntime()` select it when a profile's runtime is
-GoatCitadel.
+**MatterGoat-side prerequisites for Phase 1 — implemented in the MatterGoat repo;
+listed so the GoatCitadel team knows the client's behaviour:**
+- ✅ `MGAgentProfiles.Runtime` (default `bridge`) plus `MatterGoatSettings.GoatCitadelURL`
+  /`GoatCitadelToken` (token redacted by config `Sanitize`); `mgRuntime(profile)`
+  selects `goatCitadelRuntime` when a profile's runtime is GoatCitadel.
+- ✅ `MGRuntimeRequest` carries `SessionID`, `TurnID` and a populated `Operation`,
+  threaded through both `Complete` call sites (`MGAdvanceTurn`, `MGSynthesize`);
+  `turn_id` is the `Idempotency-Key`.
+- ✅ `BridgeMessage.AuthorRef`, populated in `mgBuildContextBundle`, so speaker
+  identity is structured, not a `name:` prefix.
+- ✅ `MGAgentRuntime.Complete` returns a structured `MGRuntimeResult` (message +
+  markers + `needs_approval` + provider/model/run_id); the orchestrator reads
+  authoritative `markers` instead of re-parsing the completion text.
+- ✅ `goatCitadelRuntime.Complete` calls `POST /api/v1/turns:complete` and maps the JSON
+  response into that result.
+
+The only thing left for a live route is the GoatCitadel `/api/v1/turns:complete`
+endpoint itself (this document's contract) and an operator setting `GoatCitadelURL`
++ a profile's `runtime` to `goatcitadel`.
 
 ---
 
@@ -104,7 +144,7 @@ GoatCitadel.
 
 So MatterGoat can populate `MGAgentProfiles` from GoatCitadel rather than by hand.
 
-`GET {GOATCITADEL_BASE_URL}/v1/agents`  → 
+`GET {GOATCITADEL_BASE_URL}/api/v1/agents`  → 
 ```json
 {"agents": [
   {"id": "...", "display_name": "...", "owner": "team|user|system|external",
@@ -126,14 +166,20 @@ So MatterGoat can populate `MGAgentProfiles` from GoatCitadel rather than by han
    decision (poll `GET .../approvals/{id}` or a signed callback). GoatCitadel must
    not proceed with the action until approved. *(This MatterGoat endpoint does not
    exist yet — it is a MatterGoat-side follow-up that pairs with this contract.)*
+   *(MatterGoat-side: `MGApproval` is session-scoped today; it must gain `TurnId`
+   and `ExpiresAt` to correlate the approval to its turn and time out. Bind the
+   decision to the exact `action`/`affected_resources` — e.g. an action hash the
+   decision echoes — to prevent approve-A / execute-B confusion.)*
 2. **Run / provenance read (MatterGoat → GoatCitadel).**
-   `GET {GOATCITADEL_BASE_URL}/v1/runs/{run_id}` → status, evidence, tool calls,
+   `GET {GOATCITADEL_BASE_URL}/api/v1/runs/{run_id}` → status, evidence, tool calls,
    provider/model — so MatterGoat displays provenance without holding canonical
-   runtime state.
+   runtime state. *(MatterGoat-side: persisting provenance needs
+   `MGTurn.Provider/Model/RunId` columns + an `mg_run_id` post prop + a migration;
+   the `mg_provider`/`mg_model` post props already exist.)*
 
 ## Phase 4 — Streaming, A2A, webhooks, memory (later)
 
-- **Streaming completion:** SSE variant of `/v1/turns:complete` for token
+- **Streaming completion:** SSE variant of `/api/v1/turns:complete` for token
   streaming into the thread.
 - **A2A handoff:** agent-to-agent handoff envelope (from/to agent, session, turn).
 - **Webhook events:** async schema for `turn.started`, `turn.completed`,
@@ -154,7 +200,7 @@ So MatterGoat can populate `MGAgentProfiles` from GoatCitadel rather than by han
 | Want | Implement | When |
 |---|---|---|
 | Keep MVP working | nothing | now |
-| GoatCitadel runs turns | Phase 1 `POST /v1/turns:complete` + bearer auth | first |
-| Auto-populate agents | Phase 2 `GET /v1/agents` | next |
+| GoatCitadel runs turns | Phase 1 `POST /api/v1/turns:complete` + bearer auth | first |
+| Auto-populate agents | Phase 2 `GET /api/v1/agents` | next |
 | Tool actions / approvals / provenance | Phase 3 | before any side effects |
 | Streaming, A2A, webhooks, memory | Phase 4 | later |

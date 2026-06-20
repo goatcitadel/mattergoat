@@ -24,12 +24,20 @@ const (
 	MGTrustUntrusted = "untrusted"
 )
 
+// Runtime selectors: which runtime adapter executes an agent's turns. The
+// in-core mattermost-plugin-ai bridge is the default; GoatCitadel routes turns
+// to the external runtime brain over HTTP (see docs/goatcitadel-integration-requests.md).
+const (
+	MGRuntimeBridge      = "bridge"
+	MGRuntimeGoatCitadel = "goatcitadel"
+)
+
 // Session collaboration modes.
 const (
-	MGModeStrictTurns    = "strict_turns"
-	MGModeLoose          = "loose"
-	MGModeRoundCritique  = "round_critique"
-	MGModeSynthesis      = "synthesis"
+	MGModeStrictTurns   = "strict_turns"
+	MGModeLoose         = "loose"
+	MGModeRoundCritique = "round_critique"
+	MGModeSynthesis     = "synthesis"
 )
 
 // Session states (the orchestrator state machine).
@@ -66,6 +74,11 @@ const (
 	MGRiskMedium   = "medium"
 	MGRiskHigh     = "high"
 	MGRiskCritical = "critical"
+
+	// MGApprovalDefaultTTLMillis is how long a pending approval stays valid before
+	// it should be treated as expired (24h). Approvals must time out so a stale
+	// request can't be acted on much later.
+	MGApprovalDefaultTTLMillis int64 = 24 * 60 * 60 * 1000
 )
 
 // Memory proposal statuses (promotion is propose-only by default).
@@ -78,29 +91,30 @@ const (
 // Protocol markers emitted/parsed in structured sessions. These are ADVISORY
 // hints validated against stored state — never authoritative on their own.
 const (
-	MGMarkerProtocolAccepted = "PROTOCOL_ACCEPTED"
-	MGMarkerTurnInProgress   = "TURN_IN_PROGRESS"
-	MGMarkerHandoffComplete  = "HANDOFF_COMPLETE"
+	MGMarkerProtocolAccepted  = "PROTOCOL_ACCEPTED"
+	MGMarkerTurnInProgress    = "TURN_IN_PROGRESS"
+	MGMarkerHandoffComplete   = "HANDOFF_COMPLETE"
 	MGMarkerWaitingForHandoff = "WAITING_FOR_HANDOFF"
-	MGMarkerStaleTurn        = "STALE_TURN_DETECTED"
-	MGMarkerCollision        = "COLLISION_DETECTED"
+	MGMarkerStaleTurn         = "STALE_TURN_DETECTED"
+	MGMarkerCollision         = "COLLISION_DETECTED"
 	MGMarkerProtocolViolation = "PROTOCOL_VIOLATION"
-	MGMarkerUserOverride     = "USER_OVERRIDE"
-	MGMarkerFinalSynthesis   = "FINAL_SYNTHESIS"
+	MGMarkerUserOverride      = "USER_OVERRIDE"
+	MGMarkerFinalSynthesis    = "FINAL_SYNTHESIS"
 )
 
 // Post type and props for governed agent messages.
 const (
 	PostTypeMGAgentResponse = "custom_mg_agent_response"
 
-	PostPropsMGSessionID   = "mg_session_id"
-	PostPropsMGAgentID     = "mg_agent_profile_id"
-	PostPropsMGTurnID      = "mg_turn_id"
-	PostPropsMGProvider    = "mg_provider"
-	PostPropsMGModel       = "mg_model"
-	PostPropsMGConfidence  = "mg_confidence"
-	PostPropsMGMarker      = "mg_marker"
-	PostPropsMGFinal       = "mg_final_synthesis"
+	PostPropsMGSessionID  = "mg_session_id"
+	PostPropsMGAgentID    = "mg_agent_profile_id"
+	PostPropsMGTurnID     = "mg_turn_id"
+	PostPropsMGProvider   = "mg_provider"
+	PostPropsMGModel      = "mg_model"
+	PostPropsMGRunID      = "mg_run_id"
+	PostPropsMGConfidence = "mg_confidence"
+	PostPropsMGMarker     = "mg_marker"
+	PostPropsMGFinal      = "mg_final_synthesis"
 )
 
 // MGAgentProfile is a registered agent: a re-scoped wrapper around a bridge
@@ -114,12 +128,13 @@ type MGAgentProfile struct {
 	BridgeAgentId       string `json:"bridge_agent_id"`
 	BotUserId           string `json:"bot_user_id"`
 	TrustLevel          string `json:"trust_level"`
+	Runtime             string `json:"runtime"` // which runtime adapter runs this agent's turns
 	DefaultContextScope string `json:"default_context_scope"`
 	MemoryScope         string `json:"memory_scope"`
-	ToolPolicy          string `json:"tool_policy"`       // raw JSON
-	ApprovalPolicy      string `json:"approval_policy"`   // raw JSON
-	AllowedChannels     string `json:"allowed_channels"`  // raw JSON array
-	BlockedChannels     string `json:"blocked_channels"`  // raw JSON array
+	ToolPolicy          string `json:"tool_policy"`      // raw JSON
+	ApprovalPolicy      string `json:"approval_policy"`  // raw JSON
+	AllowedChannels     string `json:"allowed_channels"` // raw JSON array
+	BlockedChannels     string `json:"blocked_channels"` // raw JSON array
 	CreateAt            int64  `json:"create_at"`
 	UpdateAt            int64  `json:"update_at"`
 	DeleteAt            int64  `json:"delete_at"`
@@ -131,6 +146,9 @@ func (p *MGAgentProfile) PreSave() {
 	}
 	if p.TrustLevel == "" {
 		p.TrustLevel = MGTrustAdvisory
+	}
+	if p.Runtime == "" {
+		p.Runtime = MGRuntimeBridge
 	}
 	now := GetMillis()
 	if p.CreateAt == 0 {
@@ -177,17 +195,18 @@ func (p *MGAgentProfile) IsValid() *AppError {
 
 func (p *MGAgentProfile) Auditable() map[string]any {
 	return map[string]any{
-		"id":             p.Id,
-		"owner_type":     p.OwnerType,
-		"owner_id":       p.OwnerId,
-		"display_name":   p.DisplayName,
-		"role":           p.Role,
+		"id":              p.Id,
+		"owner_type":      p.OwnerType,
+		"owner_id":        p.OwnerId,
+		"display_name":    p.DisplayName,
+		"role":            p.Role,
 		"bridge_agent_id": p.BridgeAgentId,
-		"bot_user_id":    p.BotUserId,
-		"trust_level":    p.TrustLevel,
-		"create_at":      p.CreateAt,
-		"update_at":      p.UpdateAt,
-		"delete_at":      p.DeleteAt,
+		"bot_user_id":     p.BotUserId,
+		"trust_level":     p.TrustLevel,
+		"runtime":         p.Runtime,
+		"create_at":       p.CreateAt,
+		"update_at":       p.UpdateAt,
+		"delete_at":       p.DeleteAt,
 	}
 }
 
@@ -252,18 +271,18 @@ func (s *MGSession) IsValid() *AppError {
 
 func (s *MGSession) Auditable() map[string]any {
 	return map[string]any{
-		"id":          s.Id,
-		"title":       s.Title,
-		"channel_id":  s.ChannelId,
+		"id":           s.Id,
+		"title":        s.Title,
+		"channel_id":   s.ChannelId,
 		"root_post_id": s.RootPostId,
-		"created_by":  s.CreatedBy,
-		"mode":        s.Mode,
-		"profile":     s.Profile,
-		"state":       s.State,
-		"create_at":   s.CreateAt,
-		"update_at":   s.UpdateAt,
+		"created_by":   s.CreatedBy,
+		"mode":         s.Mode,
+		"profile":      s.Profile,
+		"state":        s.State,
+		"create_at":    s.CreateAt,
+		"update_at":    s.UpdateAt,
 		"completed_at": s.CompletedAt,
-		"delete_at":   s.DeleteAt,
+		"delete_at":    s.DeleteAt,
 	}
 }
 
@@ -323,6 +342,9 @@ type MGTurn struct {
 	PostId         string `json:"post_id"`
 	Marker         string `json:"marker"`
 	Status         string `json:"status"`
+	Provider       string `json:"provider"` // runtime provenance, mirrored read-only
+	Model          string `json:"model"`    // runtime provenance, mirrored read-only
+	RunId          string `json:"run_id"`   // GoatCitadel run id, for provenance read-back
 	StartedAt      int64  `json:"started_at"`
 	CompletedAt    int64  `json:"completed_at"`
 }
@@ -348,6 +370,9 @@ func (t *MGTurn) Auditable() map[string]any {
 		"post_id":          t.PostId,
 		"marker":           t.Marker,
 		"status":           t.Status,
+		"provider":         t.Provider,
+		"model":            t.Model,
+		"run_id":           t.RunId,
 		"started_at":       t.StartedAt,
 		"completed_at":     t.CompletedAt,
 	}
@@ -357,6 +382,7 @@ func (t *MGTurn) Auditable() map[string]any {
 type MGApproval struct {
 	Id                 string `json:"id"`
 	SessionId          string `json:"session_id"`
+	TurnId             string `json:"turn_id"` // turn that requested the action, for correlation
 	RequestedByAgentId string `json:"requested_by_agent_id"`
 	Action             string `json:"action"`
 	RiskLevel          string `json:"risk_level"`
@@ -366,6 +392,7 @@ type MGApproval struct {
 	ApproverUserId     string `json:"approver_user_id"`
 	CreateAt           int64  `json:"create_at"`
 	ResolvedAt         int64  `json:"resolved_at"`
+	ExpiresAt          int64  `json:"expires_at"` // pending approval times out after this
 }
 
 func (a *MGApproval) PreSave() {
@@ -383,6 +410,9 @@ func (a *MGApproval) PreSave() {
 	}
 	if a.CreateAt == 0 {
 		a.CreateAt = GetMillis()
+	}
+	if a.ExpiresAt == 0 {
+		a.ExpiresAt = a.CreateAt + MGApprovalDefaultTTLMillis
 	}
 }
 
@@ -403,6 +433,7 @@ func (a *MGApproval) Auditable() map[string]any {
 	return map[string]any{
 		"id":                    a.Id,
 		"session_id":            a.SessionId,
+		"turn_id":               a.TurnId,
 		"requested_by_agent_id": a.RequestedByAgentId,
 		"action":                a.Action,
 		"risk_level":            a.RiskLevel,
@@ -410,6 +441,7 @@ func (a *MGApproval) Auditable() map[string]any {
 		"approver_user_id":      a.ApproverUserId,
 		"create_at":             a.CreateAt,
 		"resolved_at":           a.ResolvedAt,
+		"expires_at":            a.ExpiresAt,
 	}
 }
 
@@ -491,13 +523,13 @@ func (e *MGMarkdownExport) Auditable() map[string]any {
 
 // MGStartSessionRequest is the payload to create a session.
 type MGStartSessionRequest struct {
-	Title          string   `json:"title"`
-	ChannelId      string   `json:"channel_id"`
-	RootPostId     string   `json:"root_post_id"`
-	Mode           string   `json:"mode"`
-	Profile        string   `json:"profile"`
+	Title           string   `json:"title"`
+	ChannelId       string   `json:"channel_id"`
+	RootPostId      string   `json:"root_post_id"`
+	Mode            string   `json:"mode"`
+	Profile         string   `json:"profile"`
 	AgentProfileIds []string `json:"agent_profile_ids"`
-	ContextScope   string   `json:"context_scope"`
+	ContextScope    string   `json:"context_scope"`
 }
 
 // MGResolveRequest resolves an approval or memory proposal.
@@ -520,14 +552,14 @@ const (
 
 // Audit events for security-relevant MatterGoat actions.
 const (
-	AuditEventMGStartSession     = "mg_start_session"
-	AuditEventMGAbortSession     = "mg_abort_session"
-	AuditEventMGAddParticipant   = "mg_add_participant"
-	AuditEventMGSaveAgentProfile = "mg_save_agent_profile"
+	AuditEventMGStartSession       = "mg_start_session"
+	AuditEventMGAbortSession       = "mg_abort_session"
+	AuditEventMGAddParticipant     = "mg_add_participant"
+	AuditEventMGSaveAgentProfile   = "mg_save_agent_profile"
 	AuditEventMGDeleteAgentProfile = "mg_delete_agent_profile"
-	AuditEventMGRequestApproval  = "mg_request_approval"
-	AuditEventMGResolveApproval  = "mg_resolve_approval"
-	AuditEventMGResolveMemory    = "mg_resolve_memory_proposal"
-	AuditEventMGExportMarkdown   = "mg_export_markdown"
-	AuditEventMGSynthesize       = "mg_synthesize"
+	AuditEventMGRequestApproval    = "mg_request_approval"
+	AuditEventMGResolveApproval    = "mg_resolve_approval"
+	AuditEventMGResolveMemory      = "mg_resolve_memory_proposal"
+	AuditEventMGExportMarkdown     = "mg_export_markdown"
+	AuditEventMGSynthesize         = "mg_synthesize"
 )

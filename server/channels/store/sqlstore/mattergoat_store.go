@@ -15,7 +15,7 @@ import (
 var (
 	mgAgentProfileColumns = []string{
 		"Id", "OwnerType", "OwnerId", "DisplayName", "Role", "BridgeAgentId",
-		"BotUserId", "TrustLevel", "DefaultContextScope", "MemoryScope",
+		"BotUserId", "TrustLevel", "Runtime", "DefaultContextScope", "MemoryScope",
 		"ToolPolicy", "ApprovalPolicy", "AllowedChannels", "BlockedChannels",
 		"CreateAt", "UpdateAt", "DeleteAt",
 	}
@@ -32,12 +32,12 @@ var (
 
 	mgTurnColumns = []string{
 		"Id", "SessionId", "AgentProfileId", "TurnIndex", "PostId", "Marker",
-		"Status", "StartedAt", "CompletedAt",
+		"Status", "Provider", "Model", "RunId", "StartedAt", "CompletedAt",
 	}
 
 	mgApprovalColumns = []string{
-		"Id", "SessionId", "RequestedByAgentId", "Action", "RiskLevel",
-		"AffectedResources", "Reason", "Status", "ApproverUserId", "CreateAt", "ResolvedAt",
+		"Id", "SessionId", "TurnId", "RequestedByAgentId", "Action", "RiskLevel",
+		"AffectedResources", "Reason", "Status", "ApproverUserId", "CreateAt", "ResolvedAt", "ExpiresAt",
 	}
 
 	mgMemoryProposalColumns = []string{
@@ -70,6 +70,7 @@ func (s *SqlMatterGoatStore) agentProfileMap(p *model.MGAgentProfile) map[string
 		"BridgeAgentId":       p.BridgeAgentId,
 		"BotUserId":           p.BotUserId,
 		"TrustLevel":          p.TrustLevel,
+		"Runtime":             p.Runtime,
 		"DefaultContextScope": p.DefaultContextScope,
 		"MemoryScope":         p.MemoryScope,
 		"ToolPolicy":          p.ToolPolicy,
@@ -259,6 +260,9 @@ func (s *SqlMatterGoatStore) turnMap(t *model.MGTurn) map[string]any {
 		"PostId":         t.PostId,
 		"Marker":         t.Marker,
 		"Status":         t.Status,
+		"Provider":       t.Provider,
+		"Model":          t.Model,
+		"RunId":          t.RunId,
 		"StartedAt":      t.StartedAt,
 		"CompletedAt":    t.CompletedAt,
 	}
@@ -288,6 +292,7 @@ func (s *SqlMatterGoatStore) approvalMap(a *model.MGApproval) map[string]any {
 	return map[string]any{
 		"Id":                 a.Id,
 		"SessionId":          a.SessionId,
+		"TurnId":             a.TurnId,
 		"RequestedByAgentId": a.RequestedByAgentId,
 		"Action":             a.Action,
 		"RiskLevel":          a.RiskLevel,
@@ -297,6 +302,7 @@ func (s *SqlMatterGoatStore) approvalMap(a *model.MGApproval) map[string]any {
 		"ApproverUserId":     a.ApproverUserId,
 		"CreateAt":           a.CreateAt,
 		"ResolvedAt":         a.ResolvedAt,
+		"ExpiresAt":          a.ExpiresAt,
 	}
 }
 

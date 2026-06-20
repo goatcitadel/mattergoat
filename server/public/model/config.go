@@ -5244,6 +5244,11 @@ type MatterGoatSettings struct {
 	StaleTurnTimeoutSeconds *int    `access:"experimental_features,cloud_restrictable"`
 	RequireApprovalForTools *bool   `access:"experimental_features,cloud_restrictable"`
 	AllowMarkdownExport     *bool   `access:"experimental_features,cloud_restrictable"`
+	// GoatCitadelURL is the base URL of the external GoatCitadel runtime; when set,
+	// agent profiles with Runtime=goatcitadel route their turns there. GoatCitadelToken
+	// is the per-instance bearer token (a secret — redacted by Sanitize).
+	GoatCitadelURL   *string `access:"experimental_features,cloud_restrictable"`
+	GoatCitadelToken *string `access:"experimental_features,cloud_restrictable"`
 }
 
 func (s *MatterGoatSettings) SetDefaults() {
@@ -5282,6 +5287,14 @@ func (s *MatterGoatSettings) SetDefaults() {
 	if s.AllowMarkdownExport == nil {
 		s.AllowMarkdownExport = NewPointer(true)
 	}
+
+	if s.GoatCitadelURL == nil {
+		s.GoatCitadelURL = NewPointer("")
+	}
+
+	if s.GoatCitadelToken == nil {
+		s.GoatCitadelToken = NewPointer("")
+	}
 }
 
 func (s *MatterGoatSettings) isValid() *AppError {
@@ -5307,6 +5320,10 @@ func (s *MatterGoatSettings) isValid() *AppError {
 
 	if s.StaleTurnTimeoutSeconds != nil && *s.StaleTurnTimeoutSeconds <= 0 {
 		return NewAppError("Config.IsValid", "model.config.is_valid.mattergoat.stale_timeout.app_error", nil, "", http.StatusBadRequest)
+	}
+
+	if s.GoatCitadelURL != nil && *s.GoatCitadelURL != "" && !IsValidHTTPURL(*s.GoatCitadelURL) {
+		return NewAppError("Config.IsValid", "model.config.is_valid.mattergoat.goatcitadel_url.app_error", nil, "", http.StatusBadRequest)
 	}
 
 	return nil
@@ -5441,6 +5458,10 @@ func (o *Config) Sanitize(pluginManifests []*Manifest, opts *SanitizeOptions) {
 	}
 	if o.LdapSettings.BindPassword != nil && *o.LdapSettings.BindPassword != "" {
 		*o.LdapSettings.BindPassword = FakeSetting
+	}
+
+	if o.MatterGoatSettings.GoatCitadelToken != nil && *o.MatterGoatSettings.GoatCitadelToken != "" {
+		*o.MatterGoatSettings.GoatCitadelToken = FakeSetting
 	}
 
 	if o.FileSettings.PublicLinkSalt != nil {

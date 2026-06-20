@@ -322,12 +322,15 @@ func (a *App) MGAdvanceTurn(rctx request.CTX, sessionID string) (bool, *model.Ap
 	// Build the scoped context bundle (the security boundary) and run the turn
 	// through the runtime adapter (bridge today, GoatCitadel later).
 	messages := a.mgBuildContextBundle(rctx, session, participant, profile)
-	completion, cErr := a.mgRuntime().Complete(rctx, MGRuntimeRequest{
+	result, cErr := a.mgRuntime(profile).Complete(rctx, MGRuntimeRequest{
+		SessionID:     session.Id,
+		TurnID:        turn.Id,
 		SessionUserID: rctx.Session().UserId,
 		AgentRef:      profile.BridgeAgentId,
 		Messages:      messages,
 		UserID:        rctx.Session().UserId,
 		ChannelID:     session.ChannelId,
+		Operation:     mgClientOperation,
 	})
 	if cErr != nil {
 		turn.Status = model.MGTurnStatusViolation
@@ -338,16 +341,21 @@ func (a *App) MGAdvanceTurn(rctx request.CTX, sessionID string) (bool, *model.Ap
 		return false, mgErr("MGAdvanceTurn", "app.mattergoat.completion.error", http.StatusBadGateway, cErr)
 	}
 
-	markers := mgParseMarkers(completion)
+	// Control flow comes from the runtime's STRUCTURED result, never from
+	// re-parsing the message text (which carries untrusted prior-turn content).
+	markers := result.Markers
 	isFinal := mgHasMarker(markers, model.MGMarkerFinalSynthesis)
 
-	post, appErr := a.mgPostAgentMessage(rctx, session, profile, turn, completion, markers, isFinal)
+	post, appErr := a.mgPostAgentMessage(rctx, session, profile, turn, result, markers, isFinal)
 	if appErr != nil {
 		rctx.Logger().Warn("MatterGoat: failed to post agent message", mlog.Err(appErr))
 	}
 
 	turn.Status = model.MGTurnStatusComplete
 	turn.CompletedAt = model.GetMillis()
+	turn.Provider = result.Provider
+	turn.Model = result.Model
+	turn.RunId = result.RunID
 	if len(markers) > 0 {
 		turn.Marker = markers[len(markers)-1]
 	}
@@ -356,14 +364,15 @@ func (a *App) MGAdvanceTurn(rctx request.CTX, sessionID string) (bool, *model.Ap
 	}
 	a.Srv().Store().MatterGoat().UpdateTurn(turn)
 
-	// Approval gate: if the agent declared it needs approval, pause the session.
-	if mgNeedsApproval(completion) {
+	// Approval gate: if the runtime signalled an approval is needed, pause.
+	if result.NeedsApproval {
 		approval := &model.MGApproval{
 			SessionId:          sessionID,
+			TurnId:             turn.Id,
 			RequestedByAgentId: profile.Id,
 			Action:             "agent_requested_action",
 			RiskLevel:          model.MGRiskMedium,
-			Reason:             mgExtractSection(completion, "Proposed Next Move"),
+			Reason:             mgExtractSection(result.Message, "Proposed Next Move"),
 		}
 		approval.PreSave()
 		if _, aErr := a.Srv().Store().MatterGoat().SaveApproval(approval); aErr == nil {
@@ -415,22 +424,33 @@ func (a *App) MGSynthesize(rctx request.CTX, sessionID string) *model.AppError {
 	messages := a.mgBuildContextBundle(rctx, session, participant, profile)
 	messages = append(messages, BridgeMessage{Role: "user", Message: mgSynthesisInstruction()})
 
-	completion, cErr := a.mgRuntime().Complete(rctx, MGRuntimeRequest{
+	// Build the turn before the call so its id can be threaded as TurnID (and the
+	// external runtime's idempotency key).
+	turns, _ := a.Srv().Store().MatterGoat().GetTurnsForSession(sessionID)
+	turn := &model.MGTurn{SessionId: sessionID, AgentProfileId: profile.Id, TurnIndex: len(turns), Marker: model.MGMarkerFinalSynthesis, Status: model.MGTurnStatusComplete}
+	turn.PreSave()
+
+	result, cErr := a.mgRuntime(profile).Complete(rctx, MGRuntimeRequest{
+		SessionID:     session.Id,
+		TurnID:        turn.Id,
 		SessionUserID: rctx.Session().UserId,
 		AgentRef:      profile.BridgeAgentId,
 		Messages:      messages,
 		UserID:        rctx.Session().UserId,
 		ChannelID:     session.ChannelId,
+		Operation:     mgClientOperation,
 	})
 	if cErr != nil {
 		return mgErr("MGSynthesize", "app.mattergoat.completion.error", http.StatusBadGateway, cErr)
 	}
 
-	turns, _ := a.Srv().Store().MatterGoat().GetTurnsForSession(sessionID)
-	turn := &model.MGTurn{SessionId: sessionID, AgentProfileId: profile.Id, TurnIndex: len(turns), Marker: model.MGMarkerFinalSynthesis, Status: model.MGTurnStatusComplete}
-	turn.PreSave()
 	turn.CompletedAt = model.GetMillis()
-	post, _ := a.mgPostAgentMessage(rctx, session, profile, turn, completion, []string{model.MGMarkerFinalSynthesis}, true)
+	turn.Provider = result.Provider
+	turn.Model = result.Model
+	turn.RunId = result.RunID
+	// Synthesis is orchestrator-driven: it is always the final turn regardless of
+	// what markers the runtime returned.
+	post, _ := a.mgPostAgentMessage(rctx, session, profile, turn, result, []string{model.MGMarkerFinalSynthesis}, true)
 	if post != nil {
 		turn.PostId = post.Id
 	}
@@ -587,7 +607,7 @@ func (a *App) mgBuildContextBundle(rctx request.CTX, session *model.MGSession, p
 				continue
 			}
 			if post, pErr := a.GetSinglePost(rctx, t.PostId, false); pErr == nil {
-				messages = append(messages, BridgeMessage{Role: "assistant", Message: post.Message})
+				messages = append(messages, BridgeMessage{Role: "assistant", AuthorRef: t.AgentProfileId, Message: post.Message})
 			}
 		}
 	}
@@ -599,7 +619,7 @@ func (a *App) mgPostToMessage(post *model.Post) BridgeMessage {
 	if u, err := a.GetUser(post.UserId); err == nil {
 		name = u.Username
 	}
-	return BridgeMessage{Role: "user", Message: fmt.Sprintf("%s: %s", name, post.Message)}
+	return BridgeMessage{Role: "user", AuthorRef: post.UserId, Message: fmt.Sprintf("%s: %s", name, post.Message)}
 }
 
 func (a *App) mgPostListToMessages(list *model.PostList) []BridgeMessage {
@@ -633,7 +653,8 @@ func mgGrantScope(contextGrant string) string {
 // mgPostAgentMessage writes the agent's message as a governed post authored by
 // the agent's bot user, with provenance props and the custom_mg_agent_response
 // type. Falls back to the MatterGoat system bot if the profile has no bot user.
-func (a *App) mgPostAgentMessage(rctx request.CTX, session *model.MGSession, profile *model.MGAgentProfile, turn *model.MGTurn, message string, markers []string, isFinal bool) (*model.Post, *model.AppError) {
+func (a *App) mgPostAgentMessage(rctx request.CTX, session *model.MGSession, profile *model.MGAgentProfile, turn *model.MGTurn, result MGRuntimeResult, markers []string, isFinal bool) (*model.Post, *model.AppError) {
+	message := result.Message
 	botUserID := profile.BotUserId
 	if botUserID == "" {
 		var err *model.AppError
@@ -658,7 +679,17 @@ func (a *App) mgPostAgentMessage(rctx request.CTX, session *model.MGSession, pro
 	post.AddProp(model.PostPropsMGSessionID, session.Id)
 	post.AddProp(model.PostPropsMGAgentID, profile.Id)
 	post.AddProp(model.PostPropsMGTurnID, turn.Id)
-	post.AddProp(model.PostPropsMGProvider, profile.BridgeAgentId)
+	provider := result.Provider
+	if provider == "" {
+		provider = profile.BridgeAgentId
+	}
+	post.AddProp(model.PostPropsMGProvider, provider)
+	if result.Model != "" {
+		post.AddProp(model.PostPropsMGModel, result.Model)
+	}
+	if result.RunID != "" {
+		post.AddProp(model.PostPropsMGRunID, result.RunID)
+	}
 	post.AddProp(model.PostPropsMGMarker, strings.Join(markers, ","))
 	post.AddProp(model.PostPropsAIGeneratedByUserID, botUserID)
 	if isFinal {

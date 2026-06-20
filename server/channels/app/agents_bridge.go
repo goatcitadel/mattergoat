@@ -30,9 +30,15 @@ const (
 )
 
 type BridgeMessage struct {
-	Role    string
-	Message string
-	FileIDs []string
+	Role string
+	// AuthorRef is the opaque id of the speaker (a user id for user turns, an
+	// agent-profile id for assistant turns). It carries identity structurally so
+	// downstream runtimes need not parse a "name:" prefix out of Message. The
+	// in-core plugin client has no author field, so it is not forwarded there;
+	// external runtimes (GoatCitadel) use it for attribution.
+	AuthorRef string
+	Message   string
+	FileIDs   []string
 }
 
 type BridgeCompletionRequest struct {
