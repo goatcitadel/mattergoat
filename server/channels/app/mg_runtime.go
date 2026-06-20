@@ -78,21 +78,38 @@ type MGAgentRuntime interface {
 // running the turn on a different runtime than the operator selected.
 func (a *App) mgRuntime(profile *model.MGAgentProfile) MGAgentRuntime {
 	if profile != nil && profile.Runtime == model.MGRuntimeGoatCitadel {
-		cfg := a.Config().MatterGoatSettings
-		endpoint, token := "", ""
-		if cfg.GoatCitadelURL != nil {
-			endpoint = *cfg.GoatCitadelURL
+		if client, ok := a.goatCitadelClientFromConfig(); ok {
+			return client
 		}
-		if cfg.GoatCitadelToken != nil {
-			token = *cfg.GoatCitadelToken
-		}
-		return &goatCitadelRuntime{
-			endpoint: endpoint,
-			token:    token,
-			client:   &http.Client{Timeout: goatCitadelHTTPTimeout},
-		}
+		// Configured for GoatCitadel but no endpoint set: return an unconfigured
+		// adapter that fails the turn with a clear error rather than silently
+		// running on the bridge.
+		return &goatCitadelRuntime{}
 	}
 	return &bridgeAgentRuntime{app: a}
+}
+
+// goatCitadelClientFromConfig builds a GoatCitadel HTTP client from
+// MatterGoatSettings, or returns (nil, false) when no endpoint is configured.
+// Shared by turn routing (mgRuntime) and agent discovery.
+func (a *App) goatCitadelClientFromConfig() (*goatCitadelRuntime, bool) {
+	cfg := a.Config().MatterGoatSettings
+	endpoint := ""
+	if cfg.GoatCitadelURL != nil {
+		endpoint = *cfg.GoatCitadelURL
+	}
+	if endpoint == "" {
+		return nil, false
+	}
+	token := ""
+	if cfg.GoatCitadelToken != nil {
+		token = *cfg.GoatCitadelToken
+	}
+	return &goatCitadelRuntime{
+		endpoint: endpoint,
+		token:    token,
+		client:   &http.Client{Timeout: goatCitadelHTTPTimeout},
+	}, true
 }
 
 // bridgeAgentRuntime adapts the existing in-core agents bridge

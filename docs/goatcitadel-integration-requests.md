@@ -140,18 +140,37 @@ endpoint itself (this document's contract) and an operator setting `GoatCitadelU
 
 ---
 
-## Phase 2 — Agent discovery (optional)
+## Phase 2 — Agent discovery — implemented
 
-So MatterGoat can populate `MGAgentProfiles` from GoatCitadel rather than by hand.
+MatterGoat populates `MGAgentProfiles` from GoatCitadel's existing agents API
+rather than by hand. **GoatCitadel needs no change** — it already exposes the
+endpoint; only the response shape below differs from this doc's original sketch.
 
-`GET {GOATCITADEL_BASE_URL}/api/v1/agents`  → 
+**GoatCitadel (existing):** `GET {GOATCITADEL_BASE_URL}/api/v1/agents` (operator
+bearer) →
 ```json
-{"agents": [
-  {"id": "...", "display_name": "...", "owner": "team|user|system|external",
-   "provider": "...", "model": "...", "trust_level": "trusted|advisory|untrusted",
-   "tool_scopes": ["..."]}
+{"view": "active", "items": [
+  {"agentId": "...", "name": "...", "roleId": "...", "title": "...",
+   "defaultTools": ["..."], "lifecycleStatus": "active", "...": "full AgentProfileRecord"}
 ]}
 ```
+GoatCitadel returns its full `AgentProfileRecord`; agents do **not** carry
+per-agent `owner`/`trust_level`/`provider`/`model` (those are session/config-level
+in GoatCitadel). MatterGoat consumes only `agentId`, `name`, `roleId`, `title`.
+
+**MatterGoat (implemented):** `goatCitadelRuntime.ListAgents` GETs the above and
+`MGSyncGoatCitadelAgents` upserts each agent as an `MGAgentProfile` with
+`runtime=goatcitadel`, `owner_type=external`, `owner_id=goatcitadel`,
+`bridge_agent_id=agentId` (the `agent_ref` used by Phase 1 turns),
+`display_name=name`, `role=roleId`, `trust_level=advisory`. Re-running matches
+existing profiles by `bridge_agent_id` (upsert, not duplicate). Trigger:
+`POST {MATTERGOAT_BASE_URL}/api/v4/mattergoat/agent_profiles/sync` (requires the
+`manage_mattergoat_agent_profiles` permission).
+
+*Follow-ups:* discovered profiles post as the MatterGoat system bot until a
+per-agent bot is provisioned, and Phase 1 turns still run on the default
+provider/model — wiring `agent_ref` → GoatCitadel agent selection in the turn
+handler (so each discovered agent runs as itself) is a separate step.
 
 ## Phase 3 — Approvals + provenance read (needed before tool actions)
 

@@ -20,6 +20,8 @@ func (api *API) InitMatterGoat() {
 	// Agent profiles (registry)
 	r.Handle("/agent_profiles", api.APISessionRequired(getAgentProfiles)).Methods(http.MethodGet)
 	r.Handle("/agent_profiles", api.APISessionRequired(createAgentProfile)).Methods(http.MethodPost)
+	// Registered before the {profile_id} routes so the literal "sync" path wins.
+	r.Handle("/agent_profiles/sync", api.APISessionRequired(syncGoatCitadelAgentProfiles)).Methods(http.MethodPost)
 	r.Handle("/agent_profiles/{profile_id:[A-Za-z0-9]+}", api.APISessionRequired(getAgentProfile)).Methods(http.MethodGet)
 	r.Handle("/agent_profiles/{profile_id:[A-Za-z0-9]+}", api.APISessionRequired(updateAgentProfile)).Methods(http.MethodPut)
 	r.Handle("/agent_profiles/{profile_id:[A-Za-z0-9]+}", api.APISessionRequired(deleteAgentProfile)).Methods(http.MethodDelete)
@@ -140,6 +142,31 @@ func createAgentProfile(c *Context, w http.ResponseWriter, r *http.Request) {
 	auditRec.AddEventResultState(saved)
 	w.WriteHeader(http.StatusCreated)
 	mgWriteJSON(c, w, saved)
+}
+
+// syncGoatCitadelAgentProfiles discovers agents from the configured GoatCitadel
+// runtime and upserts them as runtime=goatcitadel agent profiles.
+func syncGoatCitadelAgentProfiles(c *Context, w http.ResponseWriter, r *http.Request) {
+	requireMatterGoatEnabled(c)
+	if c.Err != nil {
+		return
+	}
+	if !c.App.SessionHasPermissionTo(*c.AppContext.Session(), model.PermissionMGManageAgentProfiles) {
+		c.SetPermissionError(model.PermissionMGManageAgentProfiles)
+		return
+	}
+
+	auditRec := c.MakeAuditRecord(model.AuditEventMGSaveAgentProfile, model.AuditStatusFail)
+	defer c.LogAuditRec(auditRec)
+	auditRec.AddEventObjectType("mg_agent_profile")
+
+	profiles, err := c.App.MGSyncGoatCitadelAgents(c.AppContext)
+	if err != nil {
+		c.Err = err
+		return
+	}
+	auditRec.Success()
+	mgWriteJSON(c, w, profiles)
 }
 
 func getAgentProfile(c *Context, w http.ResponseWriter, r *http.Request) {
