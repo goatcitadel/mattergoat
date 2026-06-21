@@ -50,6 +50,7 @@ function mapStateToProps(state: GlobalState, props: RouteComponentProps) {
         isChannelFiles: rhsState === RHSStates.CHANNEL_FILES,
         isChannelInfo: rhsState === RHSStates.CHANNEL_INFO,
         isChannelMembers: rhsState === RHSStates.CHANNEL_MEMBERS,
+        isMatterGoatSession: rhsState === RHSStates.MATTERGOAT_SESSION,
         isPluginView: rhsState === RHSStates.PLUGIN,
         isPostEditHistory: rhsState === RHSStates.EDIT_HISTORY,
         isRecentMention: rhsState === RHSStates.MENTION,

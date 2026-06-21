@@ -11,6 +11,7 @@ import type {Team} from '@mattermost/types/teams';
 
 import ChannelInfoRhs from 'components/channel_info_rhs';
 import ChannelMembersRhs from 'components/channel_members_rhs';
+import MatterGoatSessionRhs from 'components/mattergoat/session_rhs';
 import FileUploadOverlay from 'components/file_upload_overlay';
 import {DropOverlayIdRHS} from 'components/file_upload_overlay/file_upload_overlay';
 import LoadingScreen from 'components/loading_screen';
@@ -42,6 +43,7 @@ export type Props = {
     isChannelFiles: boolean;
     isChannelInfo: boolean;
     isChannelMembers: boolean;
+    isMatterGoatSession: boolean;
     isPluginView: boolean;
     isPostEditHistory: boolean;
     previousRhsState: RhsState;
@@ -272,6 +274,7 @@ export default class SidebarRight extends React.PureComponent<Props, State> {
             isOpen,
             isChannelInfo,
             isChannelMembers,
+            isMatterGoatSession,
             isExpanded,
             isPostEditHistory,
         } = this.props;
@@ -308,6 +311,8 @@ export default class SidebarRight extends React.PureComponent<Props, State> {
             content = <ChannelMembersRhs/>;
         } else if (isPostEditHistory) {
             content = <PostEditHistory/>;
+        } else if (isMatterGoatSession) {
+            content = <MatterGoatSessionRhs/>;
         }
 
         const isRHSLoading = Boolean(

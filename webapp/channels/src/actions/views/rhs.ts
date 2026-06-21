@@ -23,6 +23,8 @@ import {getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
 import {getCurrentTimezone} from 'mattermost-redux/selectors/entities/timezone';
 import {getCurrentUserMentionKeys} from 'mattermost-redux/selectors/entities/users';
 
+import {selectMatterGoatSession} from 'actions/mattergoat';
+
 import {
     getSearchType,
     getSearchTerms,
@@ -486,6 +488,24 @@ export function showChannelInfo(channelId: string) {
         type: ActionTypes.UPDATE_RHS_STATE,
         channelId,
         state: RHSStates.CHANNEL_INFO,
+    };
+}
+
+// Open the MatterGoat session panel focused on a session and load its detail.
+export function showMatterGoatSession(sessionId: string): ActionFuncAsync<boolean> {
+    return async (dispatch, getState) => {
+        const state = getState();
+        let previousRhsState = getRhsState(state);
+        if (previousRhsState === RHSStates.MATTERGOAT_SESSION) {
+            previousRhsState = getPreviousRhsState(state);
+        }
+        dispatch({
+            type: ActionTypes.UPDATE_RHS_STATE,
+            state: RHSStates.MATTERGOAT_SESSION,
+            previousRhsState,
+        });
+        await dispatch(selectMatterGoatSession(sessionId));
+        return {data: true};
     };
 }
 
