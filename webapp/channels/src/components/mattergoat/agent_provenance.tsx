@@ -16,6 +16,10 @@ import React from 'react';
 
 import type {Post} from '@mattermost/types/posts';
 
+// Mirrors server model.PostTypeMGAgentResponse. Posts of this type carry the
+// orchestrator's provenance props (mg_session_id, mg_provider, mg_marker, …).
+export const MG_AGENT_RESPONSE_POST_TYPE = 'custom_mg_agent_response';
+
 type Props = {
     post: Post;
 };

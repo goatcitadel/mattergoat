@@ -8,6 +8,7 @@ import type {Post} from '@mattermost/types/posts';
 
 import {Posts} from 'mattermost-redux/constants';
 
+import MatterGoatAgentProvenance, {MG_AGENT_RESPONSE_POST_TYPE} from 'components/mattergoat/agent_provenance';
 import PostBodyAdditionalContent from 'components/post_view/post_body_additional_content';
 import PostMessageView from 'components/post_view/post_message_view';
 
@@ -55,5 +56,19 @@ export default function MessageWithAdditionalContent({
             </PostBodyAdditionalContent>
         );
     }
+
+    // MatterGoat: append a governed provenance strip below the message for
+    // agent-authored posts. The component self-guards (renders null unless the
+    // post carries mg_session_id), so this is inert for all other posts and
+    // when the feature is disabled.
+    if (post.type === MG_AGENT_RESPONSE_POST_TYPE) {
+        return (
+            <>
+                {msg}
+                <MatterGoatAgentProvenance post={post}/>
+            </>
+        );
+    }
+
     return msg;
 }

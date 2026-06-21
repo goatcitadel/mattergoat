@@ -36,6 +36,7 @@ export type PostType = 'system_add_remove' |
 'system_autotranslation' |
 'burn_on_read' |
 'system_shared_chan_state' |
+'custom_mg_agent_response' |
 '';
 
 export type PostEmbedType = 'image' | 'link' | 'message_attachment' | 'opengraph' | 'permalink';
