@@ -1294,6 +1294,8 @@
   "admin.experimental.linkMetadataTimeoutMilliseconds.desc": "The number of milliseconds to wait for metadata from a third-party link. Used with Post Metadata.",
   "admin.experimental.linkMetadataTimeoutMilliseconds.example": "E.g.: \"5000\"",
   "admin.experimental.linkMetadataTimeoutMilliseconds.title": "Link Metadata Timeout:",
+  "admin.experimental.mattergoatEnableAICollaboration.desc": "When true, users can start governed multi-agent AI collaboration (MatterGoat) sessions. Requires the MatterGoatAgents feature flag to be enabled.",
+  "admin.experimental.mattergoatEnableAICollaboration.title": "Enable MatterGoat AI Collaboration:",
   "admin.experimental.moveThreadFromDirectMessageChannelEnable.desc": "Control whether move thread is permitted to move message threads from direct message channels or not.",
   "admin.experimental.moveThreadFromDirectMessageChannelEnable.title": "Enable Moving Threads From Direct Message Channels",
   "admin.experimental.moveThreadFromGroupMessageChannelEnable.desc": "Control whether move thread is permitted to move message threads from group message channels or not.",

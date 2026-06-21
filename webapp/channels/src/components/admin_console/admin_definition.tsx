@@ -6632,6 +6632,15 @@ const AdminDefinition: AdminDefinitionType = {
                             isDisabled: it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.EXPERIMENTAL.FEATURES)),
                         },
                         {
+                            type: 'bool',
+                            key: 'MatterGoatSettings.EnableAICollaboration',
+                            label: defineMessage({id: 'admin.experimental.mattergoatEnableAICollaboration.title', defaultMessage: 'Enable MatterGoat AI Collaboration:'}),
+                            help_text: defineMessage({id: 'admin.experimental.mattergoatEnableAICollaboration.desc', defaultMessage: 'When true, users can start governed multi-agent AI collaboration (MatterGoat) sessions. Requires the MatterGoatAgents feature flag to be enabled.'}),
+                            help_text_markdown: false,
+                            isHidden: it.not(it.configIsTrue('FeatureFlags', 'MatterGoatAgents')),
+                            isDisabled: it.not(it.userHasWritePermissionOnResource(RESOURCE_KEYS.EXPERIMENTAL.FEATURES)),
+                        },
+                        {
                             type: 'number',
                             key: 'ExperimentalSettings.LinkMetadataTimeoutMilliseconds',
                             label: defineMessage({id: 'admin.experimental.linkMetadataTimeoutMilliseconds.title', defaultMessage: 'Link Metadata Timeout:'}),
