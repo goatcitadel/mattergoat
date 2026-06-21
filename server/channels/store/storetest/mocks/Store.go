@@ -754,6 +754,26 @@ func (_m *Store) MarkSystemRanUnitTests() {
 	_m.Called()
 }
 
+// MatterGoat provides a mock function with no fields
+func (_m *Store) MatterGoat() store.MatterGoatStore {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for MatterGoat")
+	}
+
+	var r0 store.MatterGoatStore
+	if rf, ok := ret.Get(0).(func() store.MatterGoatStore); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(store.MatterGoatStore)
+		}
+	}
+
+	return r0
+}
+
 // NotifyAdmin provides a mock function with no fields
 func (_m *Store) NotifyAdmin() store.NotifyAdminStore {
 	ret := _m.Called()
@@ -1068,26 +1088,6 @@ func (_m *Store) Recap() store.RecapStore {
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(store.RecapStore)
-		}
-	}
-
-	return r0
-}
-
-// MatterGoat provides a mock function with given fields:
-func (_m *Store) MatterGoat() store.MatterGoatStore {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for MatterGoat")
-	}
-
-	var r0 store.MatterGoatStore
-	if rf, ok := ret.Get(0).(func() store.MatterGoatStore); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(store.MatterGoatStore)
 		}
 	}
 

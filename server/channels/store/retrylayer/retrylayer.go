@@ -43,6 +43,7 @@ type RetryLayer struct {
 	JobStore                        store.JobStore
 	LicenseStore                    store.LicenseStore
 	LinkMetadataStore               store.LinkMetadataStore
+	MatterGoatStore                 store.MatterGoatStore
 	NotifyAdminStore                store.NotifyAdminStore
 	OAuthStore                      store.OAuthStore
 	OutgoingOAuthConnectionStore    store.OutgoingOAuthConnectionStore
@@ -59,7 +60,6 @@ type RetryLayer struct {
 	ReactionStore                   store.ReactionStore
 	ReadReceiptStore                store.ReadReceiptStore
 	RecapStore                      store.RecapStore
-	MatterGoatStore                 store.MatterGoatStore
 	RemoteClusterStore              store.RemoteClusterStore
 	RetentionPolicyStore            store.RetentionPolicyStore
 	RoleStore                       store.RoleStore
@@ -173,6 +173,10 @@ func (s *RetryLayer) License() store.LicenseStore {
 
 func (s *RetryLayer) LinkMetadata() store.LinkMetadataStore {
 	return s.LinkMetadataStore
+}
+
+func (s *RetryLayer) MatterGoat() store.MatterGoatStore {
+	return s.MatterGoatStore
 }
 
 func (s *RetryLayer) NotifyAdmin() store.NotifyAdminStore {
@@ -435,6 +439,11 @@ type RetryLayerLicenseStore struct {
 
 type RetryLayerLinkMetadataStore struct {
 	store.LinkMetadataStore
+	Root *RetryLayer
+}
+
+type RetryLayerMatterGoatStore struct {
+	store.MatterGoatStore
 	Root *RetryLayer
 }
 
@@ -7572,6 +7581,531 @@ func (s *RetryLayerLinkMetadataStore) Save(linkMetadata *model.LinkMetadata) (*m
 	tries := 0
 	for {
 		result, err := s.LinkMetadataStore.Save(linkMetadata)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) DeleteAgentProfile(id string) error {
+
+	tries := 0
+	for {
+		err := s.MatterGoatStore.DeleteAgentProfile(id)
+		if err == nil {
+			return nil
+		}
+		if !isRepeatableError(err) {
+			return err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) DeleteParticipant(sessionId string, agentProfileId string) error {
+
+	tries := 0
+	for {
+		err := s.MatterGoatStore.DeleteParticipant(sessionId, agentProfileId)
+		if err == nil {
+			return nil
+		}
+		if !isRepeatableError(err) {
+			return err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) DeleteSession(id string) error {
+
+	tries := 0
+	for {
+		err := s.MatterGoatStore.DeleteSession(id)
+		if err == nil {
+			return nil
+		}
+		if !isRepeatableError(err) {
+			return err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) GetAgentProfile(id string) (*model.MGAgentProfile, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.GetAgentProfile(id)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) GetAgentProfilesByOwner(ownerType string, ownerId string) ([]*model.MGAgentProfile, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.GetAgentProfilesByOwner(ownerType, ownerId)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) GetApproval(id string) (*model.MGApproval, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.GetApproval(id)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) GetApprovalsForSession(sessionId string) ([]*model.MGApproval, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.GetApprovalsForSession(sessionId)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) GetMarkdownExportsForSession(sessionId string) ([]*model.MGMarkdownExport, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.GetMarkdownExportsForSession(sessionId)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) GetMemoryProposalsForSession(sessionId string) ([]*model.MGMemoryProposal, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.GetMemoryProposalsForSession(sessionId)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) GetParticipantsForSession(sessionId string) ([]*model.MGSessionParticipant, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.GetParticipantsForSession(sessionId)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) GetSession(id string) (*model.MGSession, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.GetSession(id)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) GetSessionsForChannel(channelId string) ([]*model.MGSession, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.GetSessionsForChannel(channelId)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) GetTurnsForSession(sessionId string) ([]*model.MGTurn, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.GetTurnsForSession(sessionId)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) SaveAgentProfile(profile *model.MGAgentProfile) (*model.MGAgentProfile, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.SaveAgentProfile(profile)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) SaveApproval(approval *model.MGApproval) (*model.MGApproval, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.SaveApproval(approval)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) SaveMarkdownExport(export *model.MGMarkdownExport) (*model.MGMarkdownExport, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.SaveMarkdownExport(export)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) SaveMemoryProposal(proposal *model.MGMemoryProposal) (*model.MGMemoryProposal, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.SaveMemoryProposal(proposal)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) SaveParticipant(participant *model.MGSessionParticipant) (*model.MGSessionParticipant, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.SaveParticipant(participant)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) SaveSession(session *model.MGSession) (*model.MGSession, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.SaveSession(session)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) SaveTurn(turn *model.MGTurn) (*model.MGTurn, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.SaveTurn(turn)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) UpdateAgentProfile(profile *model.MGAgentProfile) (*model.MGAgentProfile, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.UpdateAgentProfile(profile)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) UpdateApproval(approval *model.MGApproval) (*model.MGApproval, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.UpdateApproval(approval)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) UpdateMemoryProposal(proposal *model.MGMemoryProposal) (*model.MGMemoryProposal, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.UpdateMemoryProposal(proposal)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) UpdateSession(session *model.MGSession) (*model.MGSession, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.UpdateSession(session)
+		if err == nil {
+			return result, nil
+		}
+		if !isRepeatableError(err) {
+			return result, err
+		}
+		tries++
+		if tries >= 3 {
+			err = errors.Wrap(err, "giving up after 3 consecutive repeatable transaction failures")
+			return result, err
+		}
+		timepkg.Sleep(100 * timepkg.Millisecond)
+	}
+
+}
+
+func (s *RetryLayerMatterGoatStore) UpdateTurn(turn *model.MGTurn) (*model.MGTurn, error) {
+
+	tries := 0
+	for {
+		result, err := s.MatterGoatStore.UpdateTurn(turn)
 		if err == nil {
 			return result, nil
 		}
@@ -19060,6 +19594,7 @@ func New(childStore store.Store) *RetryLayer {
 	newStore.JobStore = &RetryLayerJobStore{JobStore: childStore.Job(), Root: &newStore}
 	newStore.LicenseStore = &RetryLayerLicenseStore{LicenseStore: childStore.License(), Root: &newStore}
 	newStore.LinkMetadataStore = &RetryLayerLinkMetadataStore{LinkMetadataStore: childStore.LinkMetadata(), Root: &newStore}
+	newStore.MatterGoatStore = &RetryLayerMatterGoatStore{MatterGoatStore: childStore.MatterGoat(), Root: &newStore}
 	newStore.NotifyAdminStore = &RetryLayerNotifyAdminStore{NotifyAdminStore: childStore.NotifyAdmin(), Root: &newStore}
 	newStore.OAuthStore = &RetryLayerOAuthStore{OAuthStore: childStore.OAuth(), Root: &newStore}
 	newStore.OutgoingOAuthConnectionStore = &RetryLayerOutgoingOAuthConnectionStore{OutgoingOAuthConnectionStore: childStore.OutgoingOAuthConnection(), Root: &newStore}
@@ -19076,7 +19611,6 @@ func New(childStore store.Store) *RetryLayer {
 	newStore.ReactionStore = &RetryLayerReactionStore{ReactionStore: childStore.Reaction(), Root: &newStore}
 	newStore.ReadReceiptStore = &RetryLayerReadReceiptStore{ReadReceiptStore: childStore.ReadReceipt(), Root: &newStore}
 	newStore.RecapStore = &RetryLayerRecapStore{RecapStore: childStore.Recap(), Root: &newStore}
-	newStore.MatterGoatStore = &RetryLayerMatterGoatStore{MatterGoatStore: childStore.MatterGoat(), Root: &newStore}
 	newStore.RemoteClusterStore = &RetryLayerRemoteClusterStore{RemoteClusterStore: childStore.RemoteCluster(), Root: &newStore}
 	newStore.RetentionPolicyStore = &RetryLayerRetentionPolicyStore{RetentionPolicyStore: childStore.RetentionPolicy(), Root: &newStore}
 	newStore.RoleStore = &RetryLayerRoleStore{RoleStore: childStore.Role(), Root: &newStore}

@@ -14,57 +14,68 @@ type MatterGoatStore struct {
 	mock.Mock
 }
 
-func (_m *MatterGoatStore) SaveAgentProfile(profile *model.MGAgentProfile) (*model.MGAgentProfile, error) {
-	ret := _m.Called(profile)
+// DeleteAgentProfile provides a mock function with given fields: id
+func (_m *MatterGoatStore) DeleteAgentProfile(id string) error {
+	ret := _m.Called(id)
+
 	if len(ret) == 0 {
-		panic("no return value specified for SaveAgentProfile")
+		panic("no return value specified for DeleteAgentProfile")
 	}
-	var r0 *model.MGAgentProfile
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*model.MGAgentProfile) (*model.MGAgentProfile, error)); ok {
-		return rf(profile)
-	}
-	if rf, ok := ret.Get(0).(func(*model.MGAgentProfile) *model.MGAgentProfile); ok {
-		r0 = rf(profile)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGAgentProfile)
-	}
-	if rf, ok := ret.Get(1).(func(*model.MGAgentProfile) error); ok {
-		r1 = rf(profile)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(id)
 	} else {
-		r1 = ret.Error(1)
+		r0 = ret.Error(0)
 	}
-	return r0, r1
+
+	return r0
 }
 
-func (_m *MatterGoatStore) UpdateAgentProfile(profile *model.MGAgentProfile) (*model.MGAgentProfile, error) {
-	ret := _m.Called(profile)
+// DeleteParticipant provides a mock function with given fields: sessionId, agentProfileId
+func (_m *MatterGoatStore) DeleteParticipant(sessionId string, agentProfileId string) error {
+	ret := _m.Called(sessionId, agentProfileId)
+
 	if len(ret) == 0 {
-		panic("no return value specified for UpdateAgentProfile")
+		panic("no return value specified for DeleteParticipant")
 	}
-	var r0 *model.MGAgentProfile
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*model.MGAgentProfile) (*model.MGAgentProfile, error)); ok {
-		return rf(profile)
-	}
-	if rf, ok := ret.Get(0).(func(*model.MGAgentProfile) *model.MGAgentProfile); ok {
-		r0 = rf(profile)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGAgentProfile)
-	}
-	if rf, ok := ret.Get(1).(func(*model.MGAgentProfile) error); ok {
-		r1 = rf(profile)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(sessionId, agentProfileId)
 	} else {
-		r1 = ret.Error(1)
+		r0 = ret.Error(0)
 	}
-	return r0, r1
+
+	return r0
 }
 
+// DeleteSession provides a mock function with given fields: id
+func (_m *MatterGoatStore) DeleteSession(id string) error {
+	ret := _m.Called(id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteSession")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// GetAgentProfile provides a mock function with given fields: id
 func (_m *MatterGoatStore) GetAgentProfile(id string) (*model.MGAgentProfile, error) {
 	ret := _m.Called(id)
+
 	if len(ret) == 0 {
 		panic("no return value specified for GetAgentProfile")
 	}
+
 	var r0 *model.MGAgentProfile
 	var r1 error
 	if rf, ok := ret.Get(0).(func(string) (*model.MGAgentProfile, error)); ok {
@@ -72,22 +83,29 @@ func (_m *MatterGoatStore) GetAgentProfile(id string) (*model.MGAgentProfile, er
 	}
 	if rf, ok := ret.Get(0).(func(string) *model.MGAgentProfile); ok {
 		r0 = rf(id)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGAgentProfile)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGAgentProfile)
+		}
 	}
+
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(id)
 	} else {
 		r1 = ret.Error(1)
 	}
+
 	return r0, r1
 }
 
+// GetAgentProfilesByOwner provides a mock function with given fields: ownerType, ownerId
 func (_m *MatterGoatStore) GetAgentProfilesByOwner(ownerType string, ownerId string) ([]*model.MGAgentProfile, error) {
 	ret := _m.Called(ownerType, ownerId)
+
 	if len(ret) == 0 {
 		panic("no return value specified for GetAgentProfilesByOwner")
 	}
+
 	var r0 []*model.MGAgentProfile
 	var r1 error
 	if rf, ok := ret.Get(0).(func(string, string) ([]*model.MGAgentProfile, error)); ok {
@@ -95,317 +113,29 @@ func (_m *MatterGoatStore) GetAgentProfilesByOwner(ownerType string, ownerId str
 	}
 	if rf, ok := ret.Get(0).(func(string, string) []*model.MGAgentProfile); ok {
 		r0 = rf(ownerType, ownerId)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).([]*model.MGAgentProfile)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*model.MGAgentProfile)
+		}
 	}
+
 	if rf, ok := ret.Get(1).(func(string, string) error); ok {
 		r1 = rf(ownerType, ownerId)
 	} else {
 		r1 = ret.Error(1)
 	}
+
 	return r0, r1
 }
 
-func (_m *MatterGoatStore) DeleteAgentProfile(id string) error {
-	ret := _m.Called(id)
-	if len(ret) == 0 {
-		panic("no return value specified for DeleteAgentProfile")
-	}
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(id)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-func (_m *MatterGoatStore) SaveSession(session *model.MGSession) (*model.MGSession, error) {
-	ret := _m.Called(session)
-	if len(ret) == 0 {
-		panic("no return value specified for SaveSession")
-	}
-	var r0 *model.MGSession
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*model.MGSession) (*model.MGSession, error)); ok {
-		return rf(session)
-	}
-	if rf, ok := ret.Get(0).(func(*model.MGSession) *model.MGSession); ok {
-		r0 = rf(session)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGSession)
-	}
-	if rf, ok := ret.Get(1).(func(*model.MGSession) error); ok {
-		r1 = rf(session)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-func (_m *MatterGoatStore) UpdateSession(session *model.MGSession) (*model.MGSession, error) {
-	ret := _m.Called(session)
-	if len(ret) == 0 {
-		panic("no return value specified for UpdateSession")
-	}
-	var r0 *model.MGSession
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*model.MGSession) (*model.MGSession, error)); ok {
-		return rf(session)
-	}
-	if rf, ok := ret.Get(0).(func(*model.MGSession) *model.MGSession); ok {
-		r0 = rf(session)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGSession)
-	}
-	if rf, ok := ret.Get(1).(func(*model.MGSession) error); ok {
-		r1 = rf(session)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-func (_m *MatterGoatStore) GetSession(id string) (*model.MGSession, error) {
-	ret := _m.Called(id)
-	if len(ret) == 0 {
-		panic("no return value specified for GetSession")
-	}
-	var r0 *model.MGSession
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*model.MGSession, error)); ok {
-		return rf(id)
-	}
-	if rf, ok := ret.Get(0).(func(string) *model.MGSession); ok {
-		r0 = rf(id)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGSession)
-	}
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(id)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-func (_m *MatterGoatStore) GetSessionsForChannel(channelId string) ([]*model.MGSession, error) {
-	ret := _m.Called(channelId)
-	if len(ret) == 0 {
-		panic("no return value specified for GetSessionsForChannel")
-	}
-	var r0 []*model.MGSession
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string) ([]*model.MGSession, error)); ok {
-		return rf(channelId)
-	}
-	if rf, ok := ret.Get(0).(func(string) []*model.MGSession); ok {
-		r0 = rf(channelId)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).([]*model.MGSession)
-	}
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(channelId)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-func (_m *MatterGoatStore) DeleteSession(id string) error {
-	ret := _m.Called(id)
-	if len(ret) == 0 {
-		panic("no return value specified for DeleteSession")
-	}
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(id)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-func (_m *MatterGoatStore) SaveParticipant(participant *model.MGSessionParticipant) (*model.MGSessionParticipant, error) {
-	ret := _m.Called(participant)
-	if len(ret) == 0 {
-		panic("no return value specified for SaveParticipant")
-	}
-	var r0 *model.MGSessionParticipant
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*model.MGSessionParticipant) (*model.MGSessionParticipant, error)); ok {
-		return rf(participant)
-	}
-	if rf, ok := ret.Get(0).(func(*model.MGSessionParticipant) *model.MGSessionParticipant); ok {
-		r0 = rf(participant)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGSessionParticipant)
-	}
-	if rf, ok := ret.Get(1).(func(*model.MGSessionParticipant) error); ok {
-		r1 = rf(participant)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-func (_m *MatterGoatStore) GetParticipantsForSession(sessionId string) ([]*model.MGSessionParticipant, error) {
-	ret := _m.Called(sessionId)
-	if len(ret) == 0 {
-		panic("no return value specified for GetParticipantsForSession")
-	}
-	var r0 []*model.MGSessionParticipant
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string) ([]*model.MGSessionParticipant, error)); ok {
-		return rf(sessionId)
-	}
-	if rf, ok := ret.Get(0).(func(string) []*model.MGSessionParticipant); ok {
-		r0 = rf(sessionId)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).([]*model.MGSessionParticipant)
-	}
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(sessionId)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-func (_m *MatterGoatStore) DeleteParticipant(sessionId string, agentProfileId string) error {
-	ret := _m.Called(sessionId, agentProfileId)
-	if len(ret) == 0 {
-		panic("no return value specified for DeleteParticipant")
-	}
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(sessionId, agentProfileId)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-func (_m *MatterGoatStore) SaveTurn(turn *model.MGTurn) (*model.MGTurn, error) {
-	ret := _m.Called(turn)
-	if len(ret) == 0 {
-		panic("no return value specified for SaveTurn")
-	}
-	var r0 *model.MGTurn
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*model.MGTurn) (*model.MGTurn, error)); ok {
-		return rf(turn)
-	}
-	if rf, ok := ret.Get(0).(func(*model.MGTurn) *model.MGTurn); ok {
-		r0 = rf(turn)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGTurn)
-	}
-	if rf, ok := ret.Get(1).(func(*model.MGTurn) error); ok {
-		r1 = rf(turn)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-func (_m *MatterGoatStore) UpdateTurn(turn *model.MGTurn) (*model.MGTurn, error) {
-	ret := _m.Called(turn)
-	if len(ret) == 0 {
-		panic("no return value specified for UpdateTurn")
-	}
-	var r0 *model.MGTurn
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*model.MGTurn) (*model.MGTurn, error)); ok {
-		return rf(turn)
-	}
-	if rf, ok := ret.Get(0).(func(*model.MGTurn) *model.MGTurn); ok {
-		r0 = rf(turn)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGTurn)
-	}
-	if rf, ok := ret.Get(1).(func(*model.MGTurn) error); ok {
-		r1 = rf(turn)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-func (_m *MatterGoatStore) GetTurnsForSession(sessionId string) ([]*model.MGTurn, error) {
-	ret := _m.Called(sessionId)
-	if len(ret) == 0 {
-		panic("no return value specified for GetTurnsForSession")
-	}
-	var r0 []*model.MGTurn
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string) ([]*model.MGTurn, error)); ok {
-		return rf(sessionId)
-	}
-	if rf, ok := ret.Get(0).(func(string) []*model.MGTurn); ok {
-		r0 = rf(sessionId)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).([]*model.MGTurn)
-	}
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(sessionId)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-func (_m *MatterGoatStore) SaveApproval(approval *model.MGApproval) (*model.MGApproval, error) {
-	ret := _m.Called(approval)
-	if len(ret) == 0 {
-		panic("no return value specified for SaveApproval")
-	}
-	var r0 *model.MGApproval
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*model.MGApproval) (*model.MGApproval, error)); ok {
-		return rf(approval)
-	}
-	if rf, ok := ret.Get(0).(func(*model.MGApproval) *model.MGApproval); ok {
-		r0 = rf(approval)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGApproval)
-	}
-	if rf, ok := ret.Get(1).(func(*model.MGApproval) error); ok {
-		r1 = rf(approval)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-func (_m *MatterGoatStore) UpdateApproval(approval *model.MGApproval) (*model.MGApproval, error) {
-	ret := _m.Called(approval)
-	if len(ret) == 0 {
-		panic("no return value specified for UpdateApproval")
-	}
-	var r0 *model.MGApproval
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*model.MGApproval) (*model.MGApproval, error)); ok {
-		return rf(approval)
-	}
-	if rf, ok := ret.Get(0).(func(*model.MGApproval) *model.MGApproval); ok {
-		r0 = rf(approval)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGApproval)
-	}
-	if rf, ok := ret.Get(1).(func(*model.MGApproval) error); ok {
-		r1 = rf(approval)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
+// GetApproval provides a mock function with given fields: id
 func (_m *MatterGoatStore) GetApproval(id string) (*model.MGApproval, error) {
 	ret := _m.Called(id)
+
 	if len(ret) == 0 {
 		panic("no return value specified for GetApproval")
 	}
+
 	var r0 *model.MGApproval
 	var r1 error
 	if rf, ok := ret.Get(0).(func(string) (*model.MGApproval, error)); ok {
@@ -413,22 +143,29 @@ func (_m *MatterGoatStore) GetApproval(id string) (*model.MGApproval, error) {
 	}
 	if rf, ok := ret.Get(0).(func(string) *model.MGApproval); ok {
 		r0 = rf(id)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGApproval)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGApproval)
+		}
 	}
+
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(id)
 	} else {
 		r1 = ret.Error(1)
 	}
+
 	return r0, r1
 }
 
+// GetApprovalsForSession provides a mock function with given fields: sessionId
 func (_m *MatterGoatStore) GetApprovalsForSession(sessionId string) ([]*model.MGApproval, error) {
 	ret := _m.Called(sessionId)
+
 	if len(ret) == 0 {
 		panic("no return value specified for GetApprovalsForSession")
 	}
+
 	var r0 []*model.MGApproval
 	var r1 error
 	if rf, ok := ret.Get(0).(func(string) ([]*model.MGApproval, error)); ok {
@@ -436,114 +173,29 @@ func (_m *MatterGoatStore) GetApprovalsForSession(sessionId string) ([]*model.MG
 	}
 	if rf, ok := ret.Get(0).(func(string) []*model.MGApproval); ok {
 		r0 = rf(sessionId)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).([]*model.MGApproval)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*model.MGApproval)
+		}
 	}
+
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(sessionId)
 	} else {
 		r1 = ret.Error(1)
 	}
+
 	return r0, r1
 }
 
-func (_m *MatterGoatStore) SaveMemoryProposal(proposal *model.MGMemoryProposal) (*model.MGMemoryProposal, error) {
-	ret := _m.Called(proposal)
-	if len(ret) == 0 {
-		panic("no return value specified for SaveMemoryProposal")
-	}
-	var r0 *model.MGMemoryProposal
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*model.MGMemoryProposal) (*model.MGMemoryProposal, error)); ok {
-		return rf(proposal)
-	}
-	if rf, ok := ret.Get(0).(func(*model.MGMemoryProposal) *model.MGMemoryProposal); ok {
-		r0 = rf(proposal)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGMemoryProposal)
-	}
-	if rf, ok := ret.Get(1).(func(*model.MGMemoryProposal) error); ok {
-		r1 = rf(proposal)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-func (_m *MatterGoatStore) UpdateMemoryProposal(proposal *model.MGMemoryProposal) (*model.MGMemoryProposal, error) {
-	ret := _m.Called(proposal)
-	if len(ret) == 0 {
-		panic("no return value specified for UpdateMemoryProposal")
-	}
-	var r0 *model.MGMemoryProposal
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*model.MGMemoryProposal) (*model.MGMemoryProposal, error)); ok {
-		return rf(proposal)
-	}
-	if rf, ok := ret.Get(0).(func(*model.MGMemoryProposal) *model.MGMemoryProposal); ok {
-		r0 = rf(proposal)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGMemoryProposal)
-	}
-	if rf, ok := ret.Get(1).(func(*model.MGMemoryProposal) error); ok {
-		r1 = rf(proposal)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-func (_m *MatterGoatStore) GetMemoryProposalsForSession(sessionId string) ([]*model.MGMemoryProposal, error) {
-	ret := _m.Called(sessionId)
-	if len(ret) == 0 {
-		panic("no return value specified for GetMemoryProposalsForSession")
-	}
-	var r0 []*model.MGMemoryProposal
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string) ([]*model.MGMemoryProposal, error)); ok {
-		return rf(sessionId)
-	}
-	if rf, ok := ret.Get(0).(func(string) []*model.MGMemoryProposal); ok {
-		r0 = rf(sessionId)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).([]*model.MGMemoryProposal)
-	}
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(sessionId)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-func (_m *MatterGoatStore) SaveMarkdownExport(export *model.MGMarkdownExport) (*model.MGMarkdownExport, error) {
-	ret := _m.Called(export)
-	if len(ret) == 0 {
-		panic("no return value specified for SaveMarkdownExport")
-	}
-	var r0 *model.MGMarkdownExport
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*model.MGMarkdownExport) (*model.MGMarkdownExport, error)); ok {
-		return rf(export)
-	}
-	if rf, ok := ret.Get(0).(func(*model.MGMarkdownExport) *model.MGMarkdownExport); ok {
-		r0 = rf(export)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*model.MGMarkdownExport)
-	}
-	if rf, ok := ret.Get(1).(func(*model.MGMarkdownExport) error); ok {
-		r1 = rf(export)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
+// GetMarkdownExportsForSession provides a mock function with given fields: sessionId
 func (_m *MatterGoatStore) GetMarkdownExportsForSession(sessionId string) ([]*model.MGMarkdownExport, error) {
 	ret := _m.Called(sessionId)
+
 	if len(ret) == 0 {
 		panic("no return value specified for GetMarkdownExportsForSession")
 	}
+
 	var r0 []*model.MGMarkdownExport
 	var r1 error
 	if rf, ok := ret.Get(0).(func(string) ([]*model.MGMarkdownExport, error)); ok {
@@ -551,14 +203,528 @@ func (_m *MatterGoatStore) GetMarkdownExportsForSession(sessionId string) ([]*mo
 	}
 	if rf, ok := ret.Get(0).(func(string) []*model.MGMarkdownExport); ok {
 		r0 = rf(sessionId)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).([]*model.MGMarkdownExport)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*model.MGMarkdownExport)
+		}
 	}
+
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(sessionId)
 	} else {
 		r1 = ret.Error(1)
 	}
+
+	return r0, r1
+}
+
+// GetMemoryProposalsForSession provides a mock function with given fields: sessionId
+func (_m *MatterGoatStore) GetMemoryProposalsForSession(sessionId string) ([]*model.MGMemoryProposal, error) {
+	ret := _m.Called(sessionId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetMemoryProposalsForSession")
+	}
+
+	var r0 []*model.MGMemoryProposal
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) ([]*model.MGMemoryProposal, error)); ok {
+		return rf(sessionId)
+	}
+	if rf, ok := ret.Get(0).(func(string) []*model.MGMemoryProposal); ok {
+		r0 = rf(sessionId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*model.MGMemoryProposal)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(sessionId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetParticipantsForSession provides a mock function with given fields: sessionId
+func (_m *MatterGoatStore) GetParticipantsForSession(sessionId string) ([]*model.MGSessionParticipant, error) {
+	ret := _m.Called(sessionId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetParticipantsForSession")
+	}
+
+	var r0 []*model.MGSessionParticipant
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) ([]*model.MGSessionParticipant, error)); ok {
+		return rf(sessionId)
+	}
+	if rf, ok := ret.Get(0).(func(string) []*model.MGSessionParticipant); ok {
+		r0 = rf(sessionId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*model.MGSessionParticipant)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(sessionId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetSession provides a mock function with given fields: id
+func (_m *MatterGoatStore) GetSession(id string) (*model.MGSession, error) {
+	ret := _m.Called(id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetSession")
+	}
+
+	var r0 *model.MGSession
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (*model.MGSession, error)); ok {
+		return rf(id)
+	}
+	if rf, ok := ret.Get(0).(func(string) *model.MGSession); ok {
+		r0 = rf(id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGSession)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetSessionsForChannel provides a mock function with given fields: channelId
+func (_m *MatterGoatStore) GetSessionsForChannel(channelId string) ([]*model.MGSession, error) {
+	ret := _m.Called(channelId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetSessionsForChannel")
+	}
+
+	var r0 []*model.MGSession
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) ([]*model.MGSession, error)); ok {
+		return rf(channelId)
+	}
+	if rf, ok := ret.Get(0).(func(string) []*model.MGSession); ok {
+		r0 = rf(channelId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*model.MGSession)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(channelId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetTurnsForSession provides a mock function with given fields: sessionId
+func (_m *MatterGoatStore) GetTurnsForSession(sessionId string) ([]*model.MGTurn, error) {
+	ret := _m.Called(sessionId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTurnsForSession")
+	}
+
+	var r0 []*model.MGTurn
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) ([]*model.MGTurn, error)); ok {
+		return rf(sessionId)
+	}
+	if rf, ok := ret.Get(0).(func(string) []*model.MGTurn); ok {
+		r0 = rf(sessionId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*model.MGTurn)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(sessionId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SaveAgentProfile provides a mock function with given fields: profile
+func (_m *MatterGoatStore) SaveAgentProfile(profile *model.MGAgentProfile) (*model.MGAgentProfile, error) {
+	ret := _m.Called(profile)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SaveAgentProfile")
+	}
+
+	var r0 *model.MGAgentProfile
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*model.MGAgentProfile) (*model.MGAgentProfile, error)); ok {
+		return rf(profile)
+	}
+	if rf, ok := ret.Get(0).(func(*model.MGAgentProfile) *model.MGAgentProfile); ok {
+		r0 = rf(profile)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGAgentProfile)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.MGAgentProfile) error); ok {
+		r1 = rf(profile)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SaveApproval provides a mock function with given fields: approval
+func (_m *MatterGoatStore) SaveApproval(approval *model.MGApproval) (*model.MGApproval, error) {
+	ret := _m.Called(approval)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SaveApproval")
+	}
+
+	var r0 *model.MGApproval
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*model.MGApproval) (*model.MGApproval, error)); ok {
+		return rf(approval)
+	}
+	if rf, ok := ret.Get(0).(func(*model.MGApproval) *model.MGApproval); ok {
+		r0 = rf(approval)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGApproval)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.MGApproval) error); ok {
+		r1 = rf(approval)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SaveMarkdownExport provides a mock function with given fields: export
+func (_m *MatterGoatStore) SaveMarkdownExport(export *model.MGMarkdownExport) (*model.MGMarkdownExport, error) {
+	ret := _m.Called(export)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SaveMarkdownExport")
+	}
+
+	var r0 *model.MGMarkdownExport
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*model.MGMarkdownExport) (*model.MGMarkdownExport, error)); ok {
+		return rf(export)
+	}
+	if rf, ok := ret.Get(0).(func(*model.MGMarkdownExport) *model.MGMarkdownExport); ok {
+		r0 = rf(export)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGMarkdownExport)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.MGMarkdownExport) error); ok {
+		r1 = rf(export)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SaveMemoryProposal provides a mock function with given fields: proposal
+func (_m *MatterGoatStore) SaveMemoryProposal(proposal *model.MGMemoryProposal) (*model.MGMemoryProposal, error) {
+	ret := _m.Called(proposal)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SaveMemoryProposal")
+	}
+
+	var r0 *model.MGMemoryProposal
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*model.MGMemoryProposal) (*model.MGMemoryProposal, error)); ok {
+		return rf(proposal)
+	}
+	if rf, ok := ret.Get(0).(func(*model.MGMemoryProposal) *model.MGMemoryProposal); ok {
+		r0 = rf(proposal)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGMemoryProposal)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.MGMemoryProposal) error); ok {
+		r1 = rf(proposal)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SaveParticipant provides a mock function with given fields: participant
+func (_m *MatterGoatStore) SaveParticipant(participant *model.MGSessionParticipant) (*model.MGSessionParticipant, error) {
+	ret := _m.Called(participant)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SaveParticipant")
+	}
+
+	var r0 *model.MGSessionParticipant
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*model.MGSessionParticipant) (*model.MGSessionParticipant, error)); ok {
+		return rf(participant)
+	}
+	if rf, ok := ret.Get(0).(func(*model.MGSessionParticipant) *model.MGSessionParticipant); ok {
+		r0 = rf(participant)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGSessionParticipant)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.MGSessionParticipant) error); ok {
+		r1 = rf(participant)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SaveSession provides a mock function with given fields: session
+func (_m *MatterGoatStore) SaveSession(session *model.MGSession) (*model.MGSession, error) {
+	ret := _m.Called(session)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SaveSession")
+	}
+
+	var r0 *model.MGSession
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*model.MGSession) (*model.MGSession, error)); ok {
+		return rf(session)
+	}
+	if rf, ok := ret.Get(0).(func(*model.MGSession) *model.MGSession); ok {
+		r0 = rf(session)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGSession)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.MGSession) error); ok {
+		r1 = rf(session)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// SaveTurn provides a mock function with given fields: turn
+func (_m *MatterGoatStore) SaveTurn(turn *model.MGTurn) (*model.MGTurn, error) {
+	ret := _m.Called(turn)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SaveTurn")
+	}
+
+	var r0 *model.MGTurn
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*model.MGTurn) (*model.MGTurn, error)); ok {
+		return rf(turn)
+	}
+	if rf, ok := ret.Get(0).(func(*model.MGTurn) *model.MGTurn); ok {
+		r0 = rf(turn)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGTurn)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.MGTurn) error); ok {
+		r1 = rf(turn)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateAgentProfile provides a mock function with given fields: profile
+func (_m *MatterGoatStore) UpdateAgentProfile(profile *model.MGAgentProfile) (*model.MGAgentProfile, error) {
+	ret := _m.Called(profile)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateAgentProfile")
+	}
+
+	var r0 *model.MGAgentProfile
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*model.MGAgentProfile) (*model.MGAgentProfile, error)); ok {
+		return rf(profile)
+	}
+	if rf, ok := ret.Get(0).(func(*model.MGAgentProfile) *model.MGAgentProfile); ok {
+		r0 = rf(profile)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGAgentProfile)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.MGAgentProfile) error); ok {
+		r1 = rf(profile)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateApproval provides a mock function with given fields: approval
+func (_m *MatterGoatStore) UpdateApproval(approval *model.MGApproval) (*model.MGApproval, error) {
+	ret := _m.Called(approval)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateApproval")
+	}
+
+	var r0 *model.MGApproval
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*model.MGApproval) (*model.MGApproval, error)); ok {
+		return rf(approval)
+	}
+	if rf, ok := ret.Get(0).(func(*model.MGApproval) *model.MGApproval); ok {
+		r0 = rf(approval)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGApproval)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.MGApproval) error); ok {
+		r1 = rf(approval)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateMemoryProposal provides a mock function with given fields: proposal
+func (_m *MatterGoatStore) UpdateMemoryProposal(proposal *model.MGMemoryProposal) (*model.MGMemoryProposal, error) {
+	ret := _m.Called(proposal)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateMemoryProposal")
+	}
+
+	var r0 *model.MGMemoryProposal
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*model.MGMemoryProposal) (*model.MGMemoryProposal, error)); ok {
+		return rf(proposal)
+	}
+	if rf, ok := ret.Get(0).(func(*model.MGMemoryProposal) *model.MGMemoryProposal); ok {
+		r0 = rf(proposal)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGMemoryProposal)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.MGMemoryProposal) error); ok {
+		r1 = rf(proposal)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateSession provides a mock function with given fields: session
+func (_m *MatterGoatStore) UpdateSession(session *model.MGSession) (*model.MGSession, error) {
+	ret := _m.Called(session)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateSession")
+	}
+
+	var r0 *model.MGSession
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*model.MGSession) (*model.MGSession, error)); ok {
+		return rf(session)
+	}
+	if rf, ok := ret.Get(0).(func(*model.MGSession) *model.MGSession); ok {
+		r0 = rf(session)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGSession)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.MGSession) error); ok {
+		r1 = rf(session)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateTurn provides a mock function with given fields: turn
+func (_m *MatterGoatStore) UpdateTurn(turn *model.MGTurn) (*model.MGTurn, error) {
+	ret := _m.Called(turn)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateTurn")
+	}
+
+	var r0 *model.MGTurn
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*model.MGTurn) (*model.MGTurn, error)); ok {
+		return rf(turn)
+	}
+	if rf, ok := ret.Get(0).(func(*model.MGTurn) *model.MGTurn); ok {
+		r0 = rf(turn)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.MGTurn)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*model.MGTurn) error); ok {
+		r1 = rf(turn)
+	} else {
+		r1 = ret.Error(1)
+	}
+
 	return r0, r1
 }
 

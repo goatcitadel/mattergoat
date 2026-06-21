@@ -42,6 +42,7 @@ type TimerLayer struct {
 	JobStore                        store.JobStore
 	LicenseStore                    store.LicenseStore
 	LinkMetadataStore               store.LinkMetadataStore
+	MatterGoatStore                 store.MatterGoatStore
 	NotifyAdminStore                store.NotifyAdminStore
 	OAuthStore                      store.OAuthStore
 	OutgoingOAuthConnectionStore    store.OutgoingOAuthConnectionStore
@@ -58,7 +59,6 @@ type TimerLayer struct {
 	ReactionStore                   store.ReactionStore
 	ReadReceiptStore                store.ReadReceiptStore
 	RecapStore                      store.RecapStore
-	MatterGoatStore                 store.MatterGoatStore
 	RemoteClusterStore              store.RemoteClusterStore
 	RetentionPolicyStore            store.RetentionPolicyStore
 	RoleStore                       store.RoleStore
@@ -172,6 +172,10 @@ func (s *TimerLayer) License() store.LicenseStore {
 
 func (s *TimerLayer) LinkMetadata() store.LinkMetadataStore {
 	return s.LinkMetadataStore
+}
+
+func (s *TimerLayer) MatterGoat() store.MatterGoatStore {
+	return s.MatterGoatStore
 }
 
 func (s *TimerLayer) NotifyAdmin() store.NotifyAdminStore {
@@ -434,6 +438,11 @@ type TimerLayerLicenseStore struct {
 
 type TimerLayerLinkMetadataStore struct {
 	store.LinkMetadataStore
+	Root *TimerLayer
+}
+
+type TimerLayerMatterGoatStore struct {
+	store.MatterGoatStore
 	Root *TimerLayer
 }
 
@@ -6105,6 +6114,406 @@ func (s *TimerLayerLinkMetadataStore) Save(linkMetadata *model.LinkMetadata) (*m
 			success = "true"
 		}
 		s.Root.Metrics.ObserveStoreMethodDuration("LinkMetadataStore.Save", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) DeleteAgentProfile(id string) error {
+	start := time.Now()
+
+	err := s.MatterGoatStore.DeleteAgentProfile(id)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.DeleteAgentProfile", success, elapsed)
+	}
+	return err
+}
+
+func (s *TimerLayerMatterGoatStore) DeleteParticipant(sessionId string, agentProfileId string) error {
+	start := time.Now()
+
+	err := s.MatterGoatStore.DeleteParticipant(sessionId, agentProfileId)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.DeleteParticipant", success, elapsed)
+	}
+	return err
+}
+
+func (s *TimerLayerMatterGoatStore) DeleteSession(id string) error {
+	start := time.Now()
+
+	err := s.MatterGoatStore.DeleteSession(id)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.DeleteSession", success, elapsed)
+	}
+	return err
+}
+
+func (s *TimerLayerMatterGoatStore) GetAgentProfile(id string) (*model.MGAgentProfile, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.GetAgentProfile(id)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.GetAgentProfile", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) GetAgentProfilesByOwner(ownerType string, ownerId string) ([]*model.MGAgentProfile, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.GetAgentProfilesByOwner(ownerType, ownerId)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.GetAgentProfilesByOwner", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) GetApproval(id string) (*model.MGApproval, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.GetApproval(id)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.GetApproval", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) GetApprovalsForSession(sessionId string) ([]*model.MGApproval, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.GetApprovalsForSession(sessionId)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.GetApprovalsForSession", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) GetMarkdownExportsForSession(sessionId string) ([]*model.MGMarkdownExport, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.GetMarkdownExportsForSession(sessionId)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.GetMarkdownExportsForSession", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) GetMemoryProposalsForSession(sessionId string) ([]*model.MGMemoryProposal, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.GetMemoryProposalsForSession(sessionId)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.GetMemoryProposalsForSession", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) GetParticipantsForSession(sessionId string) ([]*model.MGSessionParticipant, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.GetParticipantsForSession(sessionId)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.GetParticipantsForSession", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) GetSession(id string) (*model.MGSession, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.GetSession(id)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.GetSession", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) GetSessionsForChannel(channelId string) ([]*model.MGSession, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.GetSessionsForChannel(channelId)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.GetSessionsForChannel", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) GetTurnsForSession(sessionId string) ([]*model.MGTurn, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.GetTurnsForSession(sessionId)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.GetTurnsForSession", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) SaveAgentProfile(profile *model.MGAgentProfile) (*model.MGAgentProfile, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.SaveAgentProfile(profile)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.SaveAgentProfile", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) SaveApproval(approval *model.MGApproval) (*model.MGApproval, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.SaveApproval(approval)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.SaveApproval", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) SaveMarkdownExport(export *model.MGMarkdownExport) (*model.MGMarkdownExport, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.SaveMarkdownExport(export)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.SaveMarkdownExport", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) SaveMemoryProposal(proposal *model.MGMemoryProposal) (*model.MGMemoryProposal, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.SaveMemoryProposal(proposal)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.SaveMemoryProposal", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) SaveParticipant(participant *model.MGSessionParticipant) (*model.MGSessionParticipant, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.SaveParticipant(participant)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.SaveParticipant", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) SaveSession(session *model.MGSession) (*model.MGSession, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.SaveSession(session)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.SaveSession", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) SaveTurn(turn *model.MGTurn) (*model.MGTurn, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.SaveTurn(turn)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.SaveTurn", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) UpdateAgentProfile(profile *model.MGAgentProfile) (*model.MGAgentProfile, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.UpdateAgentProfile(profile)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.UpdateAgentProfile", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) UpdateApproval(approval *model.MGApproval) (*model.MGApproval, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.UpdateApproval(approval)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.UpdateApproval", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) UpdateMemoryProposal(proposal *model.MGMemoryProposal) (*model.MGMemoryProposal, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.UpdateMemoryProposal(proposal)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.UpdateMemoryProposal", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) UpdateSession(session *model.MGSession) (*model.MGSession, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.UpdateSession(session)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.UpdateSession", success, elapsed)
+	}
+	return result, err
+}
+
+func (s *TimerLayerMatterGoatStore) UpdateTurn(turn *model.MGTurn) (*model.MGTurn, error) {
+	start := time.Now()
+
+	result, err := s.MatterGoatStore.UpdateTurn(turn)
+
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	if s.Root.Metrics != nil {
+		success := "false"
+		if err == nil {
+			success = "true"
+		}
+		s.Root.Metrics.ObserveStoreMethodDuration("MatterGoatStore.UpdateTurn", success, elapsed)
 	}
 	return result, err
 }
@@ -15069,6 +15478,7 @@ func New(childStore store.Store, metrics einterfaces.MetricsInterface) *TimerLay
 	newStore.JobStore = &TimerLayerJobStore{JobStore: childStore.Job(), Root: &newStore}
 	newStore.LicenseStore = &TimerLayerLicenseStore{LicenseStore: childStore.License(), Root: &newStore}
 	newStore.LinkMetadataStore = &TimerLayerLinkMetadataStore{LinkMetadataStore: childStore.LinkMetadata(), Root: &newStore}
+	newStore.MatterGoatStore = &TimerLayerMatterGoatStore{MatterGoatStore: childStore.MatterGoat(), Root: &newStore}
 	newStore.NotifyAdminStore = &TimerLayerNotifyAdminStore{NotifyAdminStore: childStore.NotifyAdmin(), Root: &newStore}
 	newStore.OAuthStore = &TimerLayerOAuthStore{OAuthStore: childStore.OAuth(), Root: &newStore}
 	newStore.OutgoingOAuthConnectionStore = &TimerLayerOutgoingOAuthConnectionStore{OutgoingOAuthConnectionStore: childStore.OutgoingOAuthConnection(), Root: &newStore}
@@ -15085,7 +15495,6 @@ func New(childStore store.Store, metrics einterfaces.MetricsInterface) *TimerLay
 	newStore.ReactionStore = &TimerLayerReactionStore{ReactionStore: childStore.Reaction(), Root: &newStore}
 	newStore.ReadReceiptStore = &TimerLayerReadReceiptStore{ReadReceiptStore: childStore.ReadReceipt(), Root: &newStore}
 	newStore.RecapStore = &TimerLayerRecapStore{RecapStore: childStore.Recap(), Root: &newStore}
-	newStore.MatterGoatStore = &TimerLayerMatterGoatStore{MatterGoatStore: childStore.MatterGoat(), Root: &newStore}
 	newStore.RemoteClusterStore = &TimerLayerRemoteClusterStore{RemoteClusterStore: childStore.RemoteCluster(), Root: &newStore}
 	newStore.RetentionPolicyStore = &TimerLayerRetentionPolicyStore{RetentionPolicyStore: childStore.RetentionPolicy(), Root: &newStore}
 	newStore.RoleStore = &TimerLayerRoleStore{RoleStore: childStore.Role(), Root: &newStore}
