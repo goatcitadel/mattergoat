@@ -211,6 +211,11 @@ export const ActionTypes = keyMirror({
     SET_RHS_EXPANDED: null,
     TOGGLE_RHS_EXPANDED: null,
 
+    // MatterGoat multi-agent AI collaboration
+    RECEIVED_MATTERGOAT_CHANNEL_SESSIONS: null,
+    RECEIVED_MATTERGOAT_SESSION_DETAIL: null,
+    SELECTED_MATTERGOAT_SESSION: null,
+
     UPDATE_MOBILE_VIEW: null,
 
     SET_NAVIGATION_BLOCKED: null,
@@ -993,6 +998,7 @@ export const RHSStates = {
     CHANNEL_INFO: 'channel-info',
     CHANNEL_MEMBERS: 'channel-members',
     EDIT_HISTORY: 'edit-history',
+    MATTERGOAT_SESSION: 'mattergoat-session',
 };
 
 export const UploadStatuses = {

@@ -179,6 +179,7 @@ import {getSiteURL} from 'utils/url';
 
 import type {ActionFunc, ThunkActionFunc} from 'types/store';
 
+import {fetchMatterGoatChannelSessions, fetchMatterGoatSessionDetail} from './mattergoat';
 import {temporarilySetPageLoadContext} from './telemetry_actions';
 
 const dispatch = store.dispatch;
@@ -766,6 +767,13 @@ export function handleEvent(msg: WebSocketMessage) {
         break;
     case WebSocketEvents.RecapUpdated:
         dispatch(handleRecapUpdated(msg));
+        break;
+
+    case WebSocketEvents.MGSessionUpdated:
+    case WebSocketEvents.MGTurnChanged:
+    case WebSocketEvents.MGApprovalRequested:
+    case WebSocketEvents.MGSynthesisReady:
+        dispatch(handleMatterGoatEvent(msg));
         break;
     case WebSocketEvents.FileDownloadRejected:
         dispatch(handleFileDownloadRejected(msg));
@@ -2320,6 +2328,28 @@ export function handleRecapUpdated(msg: WebSocketMessages.RecapUpdated): ThunkAc
     return async (doDispatch) => {
         // Fetch the updated recap and dispatch to Redux
         doDispatch(getRecap(recapId));
+    };
+}
+
+// MatterGoat session/turn/approval/synthesis events all carry a session_id and
+// are channel-scoped. Refresh the focused session's detail and, if we are
+// tracking the broadcast channel's session list, refresh that too.
+export function handleMatterGoatEvent(
+    msg: WebSocketMessages.MGSessionUpdated | WebSocketMessages.MGTurnChanged | WebSocketMessages.MGApprovalRequested | WebSocketMessages.MGSynthesisReady,
+): ThunkActionFunc<void> {
+    return (doDispatch, doGetState) => {
+        const sessionId = msg.data.session_id;
+        if (!sessionId) {
+            return;
+        }
+        const state = doGetState();
+        if (state.views.mattergoat.selectedSessionId === sessionId) {
+            doDispatch(fetchMatterGoatSessionDetail(sessionId));
+        }
+        const channelId = msg.broadcast.channel_id;
+        if (channelId && state.views.mattergoat.sessionsByChannel[channelId]) {
+            doDispatch(fetchMatterGoatChannelSessions(channelId));
+        }
     };
 }
 

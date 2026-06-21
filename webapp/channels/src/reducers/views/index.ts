@@ -14,6 +14,7 @@ import emoji from './emoji';
 import i18n from './i18n';
 import lhs from './lhs';
 import marketplace from './marketplace';
+import mattergoat from './mattergoat';
 import modals from './modals';
 import notice from './notice';
 import onboardingTasks from './onboarding_tasks';
@@ -53,4 +54,5 @@ export default combineReducers({
     productMenu,
     drafts,
     readout,
+    mattergoat,
 });

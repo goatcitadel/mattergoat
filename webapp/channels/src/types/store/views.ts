@@ -2,6 +2,7 @@
 // See LICENSE.txt for license information.
 
 import type {Channel} from '@mattermost/types/channels';
+import type {MGApproval, MGSession, MGTurn} from '@mattermost/types/mattergoat';
 import type {MarketplaceApp, MarketplacePlugin} from '@mattermost/types/marketplace';
 import type {CursorPaginationDirection, ReportDuration} from '@mattermost/types/reports';
 import type {Team} from '@mattermost/types/teams';
@@ -42,6 +43,20 @@ export type EditingPostDetails = {
     refocusId: string;
     isRHS: boolean;
     show: boolean;
+};
+
+export type MatterGoatViewState = {
+
+    // The session currently focused in the MatterGoat RHS panel.
+    selectedSessionId: string;
+
+    // Sessions listed per channel (from the channel-sessions fetch).
+    sessionsByChannel: {[channelId: string]: MGSession[]};
+
+    // Per-session detail, refreshed on fetch and on mg_* websocket events.
+    sessions: {[sessionId: string]: MGSession};
+    turnsBySession: {[sessionId: string]: MGTurn[]};
+    approvalsBySession: {[sessionId: string]: MGApproval[]};
 };
 
 export type ViewsState = {
@@ -133,6 +148,8 @@ export type ViewsState = {
     readout: {
         message: string | null;
     };
+
+    mattergoat: MatterGoatViewState;
 
     search: {
         modalSearch: string;

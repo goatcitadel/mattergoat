@@ -473,6 +473,28 @@ export type RecapUpdated = BaseWebSocketMessage<WebSocketEvents.RecapUpdated, {
     recap_id: string;
 }>;
 
+// MatterGoat messages
+
+export type MGSessionUpdated = BaseWebSocketMessage<WebSocketEvents.MGSessionUpdated, {
+    session_id: string;
+    state: string;
+}>;
+
+export type MGTurnChanged = BaseWebSocketMessage<WebSocketEvents.MGTurnChanged, {
+    session_id: string;
+    turn_id: string;
+    agent_profile_id: string;
+}>;
+
+export type MGApprovalRequested = BaseWebSocketMessage<WebSocketEvents.MGApprovalRequested, {
+    session_id: string;
+    approval_id: string;
+}>;
+
+export type MGSynthesisReady = BaseWebSocketMessage<WebSocketEvents.MGSynthesisReady, {
+    session_id: string;
+}>;
+
 // Post translation messages
 
 export type PostTranslationUpdated = BaseWebSocketMessage<WebSocketEvents.PostTranslationUpdated, {

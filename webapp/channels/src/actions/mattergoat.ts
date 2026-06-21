@@ -3,9 +3,8 @@
 
 // MatterGoat multi-agent AI collaboration action seam.
 //
-// Thin wrappers over the Client4 MatterGoat endpoints. Kept as a dedicated
-// module so UI (RHS panel, admin tools) and future Redux reducers have a stable
-// place to hang side effects; today they simply proxy to the client.
+// Thin wrappers over the Client4 MatterGoat endpoints, plus thunks that load
+// session data into the views.mattergoat Redux slice for the RHS panel.
 
 import {Client4} from 'mattermost-redux/client';
 
@@ -18,6 +17,10 @@ import type {
     MGStartSessionRequest,
     MGResolveRequest,
 } from '@mattermost/types/mattergoat';
+
+import {ActionTypes} from 'utils/constants';
+
+import type {ActionFuncAsync} from 'types/store';
 
 export function getMatterGoatAgentProfiles(ownerType = '', ownerId = ''): Promise<MGAgentProfile[]> {
     return Client4.getMatterGoatAgentProfiles(ownerType, ownerId);
@@ -89,4 +92,37 @@ export function resolveMatterGoatMemoryProposal(sessionId: string, proposalId: s
 
 export function exportMatterGoatSession(sessionId: string): Promise<{markdown: string}> {
     return Client4.exportMatterGoatSession(sessionId);
+}
+
+// --- Redux thunks (load data into views.mattergoat) ---
+
+export function fetchMatterGoatChannelSessions(channelId: string): ActionFuncAsync<MGSession[]> {
+    return async (dispatch) => {
+        const sessions = await Client4.getMatterGoatChannelSessions(channelId);
+        dispatch({type: ActionTypes.RECEIVED_MATTERGOAT_CHANNEL_SESSIONS, channelId, sessions});
+        return {data: sessions};
+    };
+}
+
+export function fetchMatterGoatSessionDetail(sessionId: string): ActionFuncAsync<MGSession> {
+    return async (dispatch) => {
+        const [session, turns, approvals] = await Promise.all([
+            Client4.getMatterGoatSession(sessionId),
+            Client4.getMatterGoatTurns(sessionId),
+            Client4.getMatterGoatApprovals(sessionId),
+        ]);
+        dispatch({type: ActionTypes.RECEIVED_MATTERGOAT_SESSION_DETAIL, session, turns, approvals});
+        return {data: session};
+    };
+}
+
+// Mark a session as the RHS focus and load its detail.
+export function selectMatterGoatSession(sessionId: string): ActionFuncAsync<boolean> {
+    return async (dispatch) => {
+        dispatch({type: ActionTypes.SELECTED_MATTERGOAT_SESSION, sessionId});
+        if (sessionId) {
+            await dispatch(fetchMatterGoatSessionDetail(sessionId));
+        }
+        return {data: true};
+    };
 }

@@ -100,6 +100,11 @@ export type WebSocketMessage = (
 
     Messages.RecapUpdated |
 
+    Messages.MGSessionUpdated |
+    Messages.MGTurnChanged |
+    Messages.MGApprovalRequested |
+    Messages.MGSynthesisReady |
+
     Messages.FileDownloadRejected |
     Messages.FileUploadRejected |
     Messages.ShowToast |
